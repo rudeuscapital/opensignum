@@ -547,33 +547,24 @@ const btcUp = btcChange >= 0;
       </div>
     </div>
 
-    <!-- New features row -->
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:18px;">
+    <!-- More features -->
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:18px;">
       {[
-        { icon:'🔍', title:'Market Screener', desc:'Scan all assets by RSI, MACD, Bollinger, EMA. Preset filters and auto-generated signals.', color:'var(--blue)' },
-        { icon:'🐋', title:'Whale Tracker', desc:'Monitor large wallet movements. Detect exchange inflows/outflows and accumulation patterns.', color:'var(--purple)' },
-        { icon:'👥', title:'Copy Trading', desc:'Follow top signal providers, copy trades with one click. Verified performance tracking.', color:'var(--green)' },
-        { icon:'🏆', title:'Leaderboard', desc:'Compete with other traders. Rankings by P&L, win rate, and trade count with badges.', color:'var(--amber)' },
+        { icon:'🔍', title:'Market Screener', desc:'Scan all assets by RSI, MACD, Bollinger, EMA. Preset filters and auto-generated buy/sell signals.' },
+        { icon:'🐋', title:'Whale Tracker', desc:'Monitor large wallet movements. Detect exchange inflows/outflows and accumulation patterns.' },
+        { icon:'👥', title:'Copy Trading', desc:'Follow top signal providers, copy trades with one click. Verified performance tracking.' },
+        { icon:'🏆', title:'Leaderboard', desc:'Compete with other traders. Rankings by P&L, win rate, and trade count with badges and streaks.' },
+        { icon:'📊', title:'Multi-Chart', desc:'View 2-4 charts side by side with independent symbol and timeframe controls per slot.' },
+        { icon:'😱', title:'Fear & Greed Index', desc:'Market sentiment gauge computed from real-time data with visual indicator and breakdown.' },
+        { icon:'📅', title:'P&L Calendar', desc:'GitHub-style heatmap of your daily profits and losses. Track your trading consistency.' },
+        { icon:'🤖', title:'AI Chat Assistant', desc:'Ask questions about markets, strategies, and technical analysis. AI-powered trading copilot.' },
       ].map((f,i) => (
-        <div class={`feat-card reveal reveal-d${(i%3)+1}`} style="padding:18px;">
-          <div style="font-size:24px;margin-bottom:10px;">{f.icon}</div>
-          <h3 style="font-size:14px;font-weight:600;margin-bottom:6px;">{f.title}</h3>
-          <p style="font-size:12px;color:var(--text2);line-height:1.6;">{f.desc}</p>
-        </div>
-      ))}
-    </div>
-
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:14px;">
-      {[
-        { icon:'📊', title:'Multi-Chart', desc:'View 2-4 charts side by side. Independent symbols and timeframes per slot.', color:'var(--blue)' },
-        { icon:'😱', title:'Fear & Greed', desc:'Market sentiment gauge computed from real-time data. Visual indicator with breakdown.', color:'var(--amber)' },
-        { icon:'📅', title:'P&L Calendar', desc:'GitHub-style heatmap of your daily profits and losses. Track your consistency.', color:'var(--green)' },
-        { icon:'🤖', title:'AI Chat', desc:'Ask questions about markets, strategies, and analysis. AI-powered trading assistant.', color:'var(--purple)' },
-      ].map((f,i) => (
-        <div class={`feat-card reveal reveal-d${(i%3)+1}`} style="padding:18px;">
-          <div style="font-size:24px;margin-bottom:10px;">{f.icon}</div>
-          <h3 style="font-size:14px;font-weight:600;margin-bottom:6px;">{f.title}</h3>
-          <p style="font-size:12px;color:var(--text2);line-height:1.6;">{f.desc}</p>
+        <div class={`feat-card reveal reveal-d${(i%3)+1}`} style="display:flex;align-items:flex-start;gap:16px;padding:20px;">
+          <div style="font-size:28px;flex-shrink:0;">{f.icon}</div>
+          <div>
+            <h3 style="font-size:15px;font-weight:600;margin-bottom:4px;">{f.title}</h3>
+            <p style="font-size:13px;color:var(--text2);line-height:1.6;">{f.desc}</p>
+          </div>
         </div>
       ))}
     </div>
