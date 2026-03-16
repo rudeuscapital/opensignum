@@ -282,23 +282,65 @@ health_check
 if [ -n "$DOMAIN" ]; then
     log "Configuring Nginx for $DOMAIN..."
 
-    # Generate Nginx config from template
-    sed "s/your-domain.com/$DOMAIN/g; s/127.0.0.1:4321/127.0.0.1:$PORT/g" nginx.conf > /etc/nginx/sites-available/$APP_NAME
+    # Step 1: HTTP-only config (so certbot can verify domain)
+    cat > /etc/nginx/sites-available/$APP_NAME <<NGINX_CONF
+server {
+    listen 80;
+    server_name $DOMAIN;
+
+    # Security headers
+    add_header X-Frame-Options SAMEORIGIN;
+    add_header X-Content-Type-Options nosniff;
+    add_header X-XSS-Protection "1; mode=block";
+    add_header Referrer-Policy "strict-origin-when-cross-origin";
+
+    # Gzip
+    gzip on;
+    gzip_types text/plain text/css application/json application/javascript text/xml;
+    gzip_min_length 256;
+
+    # Static assets (long cache)
+    location /_astro/ {
+        proxy_pass http://127.0.0.1:$PORT;
+        proxy_cache_valid 200 30d;
+        add_header Cache-Control "public, max-age=2592000, immutable";
+    }
+
+    # SSR app
+    location / {
+        proxy_pass http://127.0.0.1:$PORT;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_read_timeout 60s;
+    }
+}
+NGINX_CONF
+
     ln -sf /etc/nginx/sites-available/$APP_NAME /etc/nginx/sites-enabled/
     rm -f /etc/nginx/sites-enabled/default
 
     # Test and reload
     if nginx -t 2>/dev/null; then
         systemctl reload nginx
-        log "Nginx configured."
+        log "Nginx configured (HTTP)."
     else
-        err "Nginx config test failed — check: nginx -t"
+        warn "Nginx config test failed — check: nginx -t"
+        nginx -t
     fi
 
-    # 9. SSL with Let's Encrypt
+    # Step 2: SSL with Let's Encrypt (certbot modifies nginx config automatically)
     log "Obtaining SSL certificate for $DOMAIN..."
-    certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos --email "admin@$DOMAIN" --redirect 2>/dev/null
-    log "SSL configured."
+    if certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos --email "admin@$DOMAIN" --redirect; then
+        log "SSL configured."
+    else
+        warn "SSL setup failed — site is running on HTTP only."
+        warn "Retry later: certbot --nginx -d $DOMAIN"
+    fi
 
     # Auto-renewal cron
     if ! crontab -l 2>/dev/null | grep -q "certbot renew"; then
