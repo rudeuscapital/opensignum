@@ -1,0 +1,56 @@
+---
+import Base from './Base.astro';
+
+interface Props {
+  title: string;
+  active?: string;
+}
+const { title, active = '' } = Astro.props;
+
+const session = (Astro.locals as any).session;
+
+const nav = [
+  { href: '/docs',                label: 'Overview' },
+  { href: '/docs/getting-started', label: 'Getting Started' },
+  { href: '/docs/features',        label: 'Features' },
+  { href: '/docs/api-setup',       label: 'API Setup' },
+];
+---
+<Base title={`${title} — Open Signum Copilot Docs`}>
+  <!-- Top bar -->
+  <nav style="display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:52px;border-bottom:1px solid var(--border);background:var(--bg2);">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <a href="/" style="display:flex;align-items:center;gap:8px;text-decoration:none;color:var(--text);">
+        <img src="/logo.png" alt="Open Signum" style="width:28px;height:28px;border-radius:6px;object-fit:contain;" />
+        <span style="font-family:var(--font-mono);font-size:13px;font-weight:700;letter-spacing:0.05em;">SIGNUM</span>
+      </a>
+      <span style="color:var(--text3);font-size:13px;">/ Docs</span>
+    </div>
+    <div style="display:flex;gap:12px;align-items:center;">
+      <a href="/" style="font-size:13px;color:var(--text2);text-decoration:none;">Home</a>
+      <a href={session ? "/app" : "/auth/login"} style="display:inline-flex;padding:6px 14px;border-radius:6px;background:var(--green);color:#000;font-size:12px;font-weight:600;text-decoration:none;">
+        {session ? 'Dashboard' : 'Launch App'}
+      </a>
+    </div>
+  </nav>
+
+  <div style="display:flex;max-width:1100px;margin:0 auto;min-height:calc(100vh - 52px);">
+    <!-- Sidebar -->
+    <aside style="width:220px;padding:24px 20px;border-right:1px solid var(--border);flex-shrink:0;">
+      <div style="font-size:11px;font-family:var(--font-mono);color:var(--text3);letter-spacing:0.08em;margin-bottom:12px;">DOCUMENTATION</div>
+      {nav.map(item => (
+        <a
+          href={item.href}
+          style={`display:block;padding:8px 12px;margin-bottom:2px;border-radius:6px;font-size:13px;text-decoration:none;color:${active === item.href ? 'var(--text)' : 'var(--text2)'};background:${active === item.href ? 'var(--bg4)' : 'transparent'};font-weight:${active === item.href ? '500' : '400'};`}
+        >
+          {item.label}
+        </a>
+      ))}
+    </aside>
+
+    <!-- Content -->
+    <main style="flex:1;padding:32px 40px;max-width:760px;">
+      <slot />
+    </main>
+  </div>
+</Base>

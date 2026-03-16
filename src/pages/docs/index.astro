@@ -1,0 +1,58 @@
+---
+import Docs from '../../layouts/Docs.astro';
+---
+<Docs title="Overview" active="/docs">
+  <h1 style="font-size:28px;font-weight:700;margin-bottom:8px;">Open Signum Copilot</h1>
+  <p style="font-size:15px;color:var(--text2);line-height:1.7;margin-bottom:32px;">
+    An open-source, AI-powered trading dashboard for crypto, forex, and stocks.
+  </p>
+
+  <h2 style="font-size:18px;font-weight:600;margin-bottom:12px;padding-top:16px;border-top:1px solid var(--border);">What is Open Signum Copilot?</h2>
+  <p style="font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:16px;">
+    Open Signum Copilot is a browser-based trading tool that combines real-time market data with AI analysis. It provides technical charts, AI-generated trade signals, risk management tools, and portfolio tracking — all in one dashboard.
+  </p>
+
+  <h2 style="font-size:18px;font-weight:600;margin-bottom:12px;padding-top:16px;border-top:1px solid var(--border);">Key Features</h2>
+  <ul style="font-size:14px;color:var(--text2);line-height:2;padding-left:20px;">
+    <li><strong style="color:var(--text);">Multi-Asset Charts</strong> — Candlestick charts with technical indicators (RSI, MACD, Bollinger Bands, EMA)</li>
+    <li><strong style="color:var(--text);">Multi-Chart View</strong> — 2x2, 2x1, or 3x1 grid of charts with independent controls</li>
+    <li><strong style="color:var(--text);">Market Screener</strong> — Scan all assets by technical conditions with preset filters</li>
+    <li><strong style="color:var(--text);">AI Trade Signals</strong> — AI engine analyzes market data and generates BUY/SELL/HOLD signals</li>
+    <li><strong style="color:var(--text);">Copy Trading</strong> — Follow top signal providers and copy trades</li>
+    <li><strong style="color:var(--text);">Whale Tracker</strong> — Monitor large wallet movements and exchange flows</li>
+    <li><strong style="color:var(--text);">Leaderboard</strong> — Rankings by P&L, win rate, and trade count</li>
+    <li><strong style="color:var(--text);">Fear & Greed Index</strong> — Market sentiment gauge from real-time data</li>
+    <li><strong style="color:var(--text);">P&L Calendar</strong> — GitHub-style daily profit/loss heatmap</li>
+    <li><strong style="color:var(--text);">Risk Calculator</strong> — Position sizing with risk/reward visualization</li>
+    <li><strong style="color:var(--text);">Portfolio Tracker</strong> — Multi-asset portfolio with real-time P&L</li>
+    <li><strong style="color:var(--text);">Wallet Auth</strong> — Sign in with Ethereum (MetaMask) or Solana (Phantom, Solflare) wallets</li>
+    <li><strong style="color:var(--text);">Real-Time Market Data</strong> — Live crypto, forex, and stock data (no API keys required)</li>
+  </ul>
+
+  <h2 style="font-size:18px;font-weight:600;margin-bottom:12px;padding-top:16px;border-top:1px solid var(--border);">Supported Assets</h2>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;">
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:14px;">
+      <div style="font-size:12px;font-family:var(--font-mono);color:var(--green);margin-bottom:6px;">CRYPTO</div>
+      <div style="font-size:12px;color:var(--text2);line-height:1.8;">BTC, ETH, SOL, BNB, ADA, XRP, DOGE, AVAX, DOT, LINK</div>
+    </div>
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:14px;">
+      <div style="font-size:12px;font-family:var(--font-mono);color:var(--blue);margin-bottom:6px;">FOREX</div>
+      <div style="font-size:12px;color:var(--text2);line-height:1.8;">EUR/USD, GBP/USD, USD/JPY, USD/CHF, AUD/USD, USD/CAD</div>
+    </div>
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:14px;">
+      <div style="font-size:12px;font-family:var(--font-mono);color:var(--purple);margin-bottom:6px;">STOCKS</div>
+      <div style="font-size:12px;color:var(--text2);line-height:1.8;">AAPL, MSFT, NVDA, TSLA, AMZN, META, GOOGL, SPY</div>
+    </div>
+  </div>
+
+  <h2 style="font-size:18px;font-weight:600;margin-bottom:12px;padding-top:16px;border-top:1px solid var(--border);">Authentication</h2>
+  <p style="font-size:14px;color:var(--text2);line-height:1.7;">
+    Open Signum Copilot uses <strong style="color:var(--green);">Sign-In with Ethereum (SIWE)</strong> for authentication. Connect your crypto wallet (MetaMask, Coinbase Wallet, etc.) to sign in — no passwords or email required. Your wallet address is your identity.
+  </p>
+
+  <div style="margin-top:32px;padding:16px;background:rgba(245,166,35,0.08);border:1px solid rgba(245,166,35,0.2);border-radius:8px;">
+    <p style="font-size:12px;color:var(--amber);line-height:1.7;margin:0;">
+      <strong>Disclaimer:</strong> Open Signum Copilot is not financial advice. AI signals are for educational purposes. Always do your own research and never trade with money you cannot afford to lose.
+    </p>
+  </div>
+</Docs>

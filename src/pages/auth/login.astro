@@ -1,0 +1,57 @@
+---
+import Base from '../../layouts/Base.astro';
+import WalletConnect from '../../components/WalletConnect';
+---
+<Base title="Login — Open Signum Copilot">
+  <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;">
+    <div style="text-align:center;max-width:480px;width:100%;">
+      <!-- Logo -->
+      <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:32px;">
+        <img src="/logo.png" alt="Open Signum" style="width:40px;height:40px;border-radius:10px;object-fit:contain;" />
+        <span style="font-family:var(--font-mono);font-size:18px;font-weight:700;letter-spacing:0.05em;">OPEN SIGNUM</span>
+      </div>
+
+      <h1 style="font-size:24px;font-weight:600;margin-bottom:8px;color:var(--text);">Welcome Back</h1>
+      <p style="font-size:14px;color:var(--text2);margin-bottom:32px;line-height:1.6;">
+        Connect your crypto wallet to access the trading dashboard.<br/>
+        Ethereum & Solana wallets supported — no passwords needed.
+      </p>
+
+      <div style="display:flex;justify-content:center;">
+        <WalletConnect client:load />
+      </div>
+
+      <div style="margin-top:36px;padding-top:20px;border-top:1px solid var(--border);">
+        <div style="display:flex;justify-content:center;gap:16px;margin-bottom:12px;">
+          <!-- EVM -->
+          <div style="display:flex;align-items:center;gap:4px;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#627eea" stroke-width="2"><path d="M12 2L3 12.5L12 17L21 12.5L12 2Z"/><path d="M3 12.5L12 22L21 12.5L12 17L3 12.5Z"/></svg>
+            <span style="font-size:10px;color:var(--text3);">MetaMask</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:4px;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#0052FF" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="5"/></svg>
+            <span style="font-size:10px;color:var(--text3);">Coinbase</span>
+          </div>
+          <!-- Solana -->
+          <div style="display:flex;align-items:center;gap:4px;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#AB9FF2" stroke-width="2"><circle cx="12" cy="12" r="8"/><circle cx="8" cy="11" r="1"/><circle cx="12" cy="11" r="1"/><circle cx="16" cy="11" r="1"/></svg>
+            <span style="font-size:10px;color:var(--text3);">Phantom</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:4px;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#FC822B" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/></svg>
+            <span style="font-size:10px;color:var(--text3);">Solflare</span>
+          </div>
+        </div>
+        <p style="font-size:11px;color:var(--text3);line-height:1.8;">
+          Your wallet address is your identity — we never access your funds.<br/>
+          Signing is free and does not cost any gas.
+        </p>
+      </div>
+
+      <div style="margin-top:24px;display:flex;gap:16px;justify-content:center;">
+        <a href="/" style="font-size:12px;color:var(--text3);text-decoration:none;">← Back to home</a>
+        <a href="/docs" style="font-size:12px;color:var(--text3);text-decoration:none;">Documentation</a>
+      </div>
+    </div>
+  </div>
+</Base>

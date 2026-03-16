@@ -1,0 +1,993 @@
+---
+import Base from '../layouts/Base.astro';
+import {
+  fetchMultipleCryptoTickers, fetchForexTicker, fetchCryptoOHLC,
+  computeRSI, computeMACD, computeBollinger, computeEMA,
+  formatPrice, formatVolume,
+  type Ticker, type CandleData,
+} from '../lib/api';
+
+const session = (Astro.locals as any).session;
+const appHref = session ? '/app' : '/auth/login';
+
+// ── Fetch real market data server-side ──────────────────────────────────────
+const cryptoSyms = ['BTC','ETH','SOL','BNB','XRP','ADA','DOGE','AVAX','DOT','LINK'];
+const [cryptoRes, eurRes, gbpRes, ohlcRes, globalRes] = await Promise.allSettled([
+  fetchMultipleCryptoTickers(cryptoSyms),
+  fetchForexTicker('EUR/USD'),
+  fetchForexTicker('GBP/USD'),
+  fetchCryptoOHLC('BTC', 30),
+  fetch('https://api.coingecko.com/api/v3/global').then(r => r.json()),
+]);
+
+const cryptoTickers: Ticker[] = cryptoRes.status === 'fulfilled' ? cryptoRes.value : [];
+const forexTickers: Ticker[] = [
+  ...(eurRes.status === 'fulfilled' ? [eurRes.value] : []),
+  ...(gbpRes.status === 'fulfilled' ? [gbpRes.value] : []),
+];
+const allTickers = [...cryptoTickers, ...forexTickers];
+const btcOhlc: CandleData[] = ohlcRes.status === 'fulfilled' ? ohlcRes.value : [];
+const btc = cryptoTickers.find(t => t.symbol === 'BTC');
+
+// Global market stats
+const globalData = globalRes.status === 'fulfilled' ? globalRes.value.data : null;
+const totalMarketCap = globalData?.total_market_cap?.usd ?? 0;
+const totalVolume24h = globalData?.total_volume?.usd ?? 0;
+const btcDominance = globalData?.market_cap_percentage?.btc ?? 0;
+
+// ── Compute real BTC indicators ─────────────────────────────────────────────
+const closes = btcOhlc.map(c => c.close);
+const rsi = closes.length > 14 ? computeRSI(closes) : 50;
+const macd = computeMACD(closes);
+const bb = computeBollinger(closes);
+const ema20arr = closes.length > 20 ? computeEMA(closes, 20) : [];
+const ema20val = ema20arr.length > 0 ? ema20arr[ema20arr.length - 1] : (btc?.price ?? 0);
+
+// ── Generate SVG paths from real OHLC data ──────────────────────────────────
+function toSvgPath(values: number[], w = 660, h = 160, pad = 10): string {
+  if (values.length < 2) return `M0,${h/2} L${w},${h/2}`;
+  const mn = Math.min(...values), mx = Math.max(...values), rng = mx - mn || 1;
+  return values.map((v, i) => {
+    const x = (i / (values.length - 1)) * w;
+    const y = pad + ((mx - v) / rng) * (h - 2 * pad);
+    return `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ');
+}
+
+const chartPath = toSvgPath(closes);
+// Bollinger band paths (last 20 candles projected across full width)
+const bbUpper = closes.length >= 20
+  ? toSvgPath(closes.map((_, i) => {
+      const slice = closes.slice(Math.max(0, i - 19), i + 1);
+      if (slice.length < 2) return closes[i];
+      const mean = slice.reduce((a, b) => a + b, 0) / slice.length;
+      const std = Math.sqrt(slice.reduce((s, v) => s + (v - mean) ** 2, 0) / slice.length);
+      return mean + 2 * std;
+    }))
+  : '';
+const bbLower = closes.length >= 20
+  ? toSvgPath(closes.map((_, i) => {
+      const slice = closes.slice(Math.max(0, i - 19), i + 1);
+      if (slice.length < 2) return closes[i];
+      const mean = slice.reduce((a, b) => a + b, 0) / slice.length;
+      const std = Math.sqrt(slice.reduce((s, v) => s + (v - mean) ** 2, 0) / slice.length);
+      return mean - 2 * std;
+    }))
+  : '';
+const emaPath = ema20arr.length > 0 ? toSvgPath(ema20arr) : '';
+
+// Last point for the pulsing dot
+const lastY = closes.length >= 2
+  ? (() => { const mn = Math.min(...closes), mx = Math.max(...closes), rng = mx - mn || 1;
+     return 10 + ((mx - closes[closes.length - 1]) / rng) * 140; })()
+  : 80;
+
+// ── Ticker marquee data ─────────────────────────────────────────────────────
+const marqueeItems = allTickers.map(t => ({
+  s: t.symbol,
+  p: t.assetClass === 'forex' ? t.price.toFixed(4) : ('$' + formatPrice(t.price)),
+  c: `${t.changePct24h >= 0 ? '+' : ''}${t.changePct24h.toFixed(2)}%`,
+  up: t.changePct24h >= 0,
+  vol: t.volume24h,
+  mcap: t.marketCap ?? 0,
+}));
+// Double for seamless loop
+const marqueeDouble = [...marqueeItems, ...marqueeItems];
+
+// BTC display values
+const btcPrice = btc ? formatPrice(btc.price) : '—';
+const btcChange = btc ? btc.changePct24h : 0;
+const btcVolume = btc ? formatVolume(btc.volume24h) : '$0';
+const btcUp = btcChange >= 0;
+---
+<Base title="Open Signum Copilot — AI-Powered Trading Dashboard">
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     LANDING PAGE STYLES — animations, grid, glow effects
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<style>
+  /* ── Reveal on scroll ─────────────────────────────────────────────────── */
+  .reveal{opacity:0;transform:translateY(32px);transition:opacity .7s cubic-bezier(.22,1,.36,1),transform .7s cubic-bezier(.22,1,.36,1)}
+  .reveal.visible{opacity:1;transform:translateY(0)}
+  .reveal-d1{transition-delay:.1s}.reveal-d2{transition-delay:.2s}.reveal-d3{transition-delay:.3s}
+  .reveal-d4{transition-delay:.4s}.reveal-d5{transition-delay:.5s}.reveal-d6{transition-delay:.6s}
+
+  /* ── Hero background grid ─────────────────────────────────────────────── */
+  .hero-grid{
+    position:absolute;inset:0;overflow:hidden;pointer-events:none;
+    background-image:
+      linear-gradient(rgba(0,212,170,.04) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(0,212,170,.04) 1px,transparent 1px);
+    background-size:60px 60px;
+    mask-image:radial-gradient(ellipse 70% 60% at 50% 40%,#000 20%,transparent 70%);
+    -webkit-mask-image:radial-gradient(ellipse 70% 60% at 50% 40%,#000 20%,transparent 70%);
+  }
+
+  /* ── Animated gradient orbs ───────────────────────────────────────────── */
+  .orb{position:absolute;border-radius:50%;filter:blur(100px);pointer-events:none;will-change:transform}
+  .orb-1{width:600px;height:600px;background:rgba(0,212,170,.08);top:-200px;left:-100px;animation:orbFloat 12s ease-in-out infinite}
+  .orb-2{width:500px;height:500px;background:rgba(59,158,255,.07);top:-100px;right:-150px;animation:orbFloat 15s ease-in-out infinite reverse}
+  .orb-3{width:400px;height:400px;background:rgba(167,139,250,.06);bottom:-100px;left:40%;animation:orbFloat 18s ease-in-out infinite 3s}
+  @keyframes orbFloat{
+    0%,100%{transform:translate(0,0) scale(1)}
+    33%{transform:translate(30px,-40px) scale(1.05)}
+    66%{transform:translate(-20px,30px) scale(.95)}
+  }
+
+  /* ── Floating particles ───────────────────────────────────────────────── */
+  .particles{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+  .particle{
+    position:absolute;width:2px;height:2px;background:var(--green);border-radius:50%;
+    opacity:0;animation:particleRise linear infinite;
+  }
+  @keyframes particleRise{
+    0%{opacity:0;transform:translateY(0) scale(1)}
+    10%{opacity:.6}
+    90%{opacity:.6}
+    100%{opacity:0;transform:translateY(-800px) scale(0)}
+  }
+
+  /* ── Glow pulse on hero heading ───────────────────────────────────────── */
+  .hero-glow{
+    text-shadow:0 0 80px rgba(0,212,170,.15),0 0 160px rgba(59,158,255,.08);
+    animation:heroGlow 4s ease-in-out infinite alternate;
+  }
+  @keyframes heroGlow{
+    0%{text-shadow:0 0 80px rgba(0,212,170,.12),0 0 160px rgba(59,158,255,.06)}
+    100%{text-shadow:0 0 120px rgba(0,212,170,.22),0 0 200px rgba(59,158,255,.12)}
+  }
+
+  /* ── Animated gradient text ───────────────────────────────────────────── */
+  .gradient-text{
+    background:linear-gradient(135deg,var(--green),var(--blue),var(--purple),var(--green));
+    background-size:300% 300%;
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+    animation:gradShift 6s ease infinite;
+  }
+  @keyframes gradShift{
+    0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}
+  }
+
+  /* ── Typewriter / terminal line ───────────────────────────────────────── */
+  .terminal-line{
+    display:inline-block;overflow:hidden;white-space:nowrap;border-right:2px solid var(--green);
+    animation:typeWriter 3s steps(36) 1s forwards,blinkCaret .6s step-end infinite;
+    max-width:0;
+  }
+  .terminal-line.visible{max-width:500px}
+  @keyframes typeWriter{from{max-width:0}to{max-width:500px}}
+  @keyframes blinkCaret{50%{border-color:transparent}}
+
+  /* ── Stat counter ─────────────────────────────────────────────────────── */
+  .stat-num{
+    font-family:var(--font-mono);font-size:32px;font-weight:700;
+    background:linear-gradient(135deg,var(--green),var(--blue));
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  }
+
+  /* ── Feature card ─────────────────────────────────────────────────────── */
+  .feat-card{
+    position:relative;background:var(--bg2);border:1px solid var(--border);border-radius:14px;
+    padding:28px 24px;overflow:hidden;transition:transform .3s,border-color .3s,box-shadow .3s;
+  }
+  .feat-card:hover{
+    transform:translateY(-4px);border-color:var(--border2);
+    box-shadow:0 12px 40px rgba(0,0,0,.3),0 0 0 1px rgba(0,212,170,.08);
+  }
+  .feat-card::before{
+    content:'';position:absolute;top:0;left:0;right:0;height:2px;
+    background:linear-gradient(90deg,transparent,var(--green),transparent);
+    opacity:0;transition:opacity .3s;
+  }
+  .feat-card:hover::before{opacity:1}
+  .feat-icon{
+    width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+    margin-bottom:16px;position:relative;
+  }
+  .feat-icon::after{
+    content:'';position:absolute;inset:-4px;border-radius:14px;
+    opacity:0;transition:opacity .3s;filter:blur(12px);
+  }
+  .feat-card:hover .feat-icon::after{opacity:.4}
+
+  /* ── Animated chart line (SVG) ────────────────────────────────────────── */
+  .chart-line{stroke-dasharray:800;stroke-dashoffset:800;animation:drawLine 3s ease forwards}
+  .chart-line.visible{stroke-dashoffset:0}
+  @keyframes drawLine{to{stroke-dashoffset:0}}
+
+  /* ── Marquee / ticker ─────────────────────────────────────────────────── */
+  .marquee-track{display:flex;gap:32px;animation:marquee 30s linear infinite;width:max-content}
+  @keyframes marquee{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+
+  /* ── Glowing CTA button ───────────────────────────────────────────────── */
+  .cta-btn{
+    position:relative;display:inline-flex;align-items:center;gap:10px;
+    padding:16px 36px;border-radius:12px;font-size:16px;font-weight:700;
+    text-decoration:none;color:#000;overflow:hidden;
+    background:linear-gradient(135deg,var(--green),#00e6b8,var(--blue));
+    background-size:200% 200%;animation:ctaShift 4s ease infinite;
+    transition:transform .2s,box-shadow .2s;
+  }
+  .cta-btn:hover{transform:translateY(-2px);box-shadow:0 0 30px rgba(0,212,170,.35),0 0 60px rgba(0,212,170,.15)}
+  @keyframes ctaShift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+  .cta-btn::before{
+    content:'';position:absolute;inset:0;
+    background:linear-gradient(135deg,transparent 40%,rgba(255,255,255,.2) 50%,transparent 60%);
+    background-size:250% 100%;animation:shimmer 3s linear infinite;
+  }
+  @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+  /* ── Connector lines between sections ─────────────────────────────────── */
+  .section-connector{
+    width:1px;height:80px;margin:0 auto;
+    background:linear-gradient(to bottom,var(--border),var(--green),var(--border));
+    opacity:.3;position:relative;
+  }
+  .section-connector::after{
+    content:'';position:absolute;bottom:0;left:50%;transform:translateX(-50%);
+    width:6px;height:6px;border-radius:50%;background:var(--green);
+    box-shadow:0 0 10px var(--green);
+  }
+
+  /* ── How it works step ────────────────────────────────────────────────── */
+  .step-card{
+    position:relative;background:var(--bg2);border:1px solid var(--border);border-radius:12px;
+    padding:24px 20px;text-align:center;transition:border-color .3s;
+  }
+  .step-card:hover{border-color:var(--green)}
+  .step-num{
+    width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-family:var(--font-mono);font-weight:700;font-size:16px;margin:0 auto 14px;
+    border:2px solid var(--green);color:var(--green);
+    box-shadow:0 0 20px rgba(0,212,170,.1);
+  }
+  .step-connector{
+    position:absolute;top:44px;left:100%;width:calc(100% - 40px);height:2px;
+    background:linear-gradient(90deg,var(--green),transparent);
+    opacity:.2;pointer-events:none;
+  }
+
+  /* ── Testimonial / social proof ───────────────────────────────────────── */
+  .proof-card{
+    background:var(--bg2);border:1px solid var(--border);border-radius:12px;
+    padding:20px 24px;position:relative;
+  }
+  .proof-card::before{
+    content:'"';position:absolute;top:12px;left:16px;
+    font-size:48px;line-height:1;color:var(--border2);font-family:serif;
+  }
+
+  /* ── Responsive ───────────────────────────────────────────────────────── */
+  @media(max-width:768px){
+    .feat-grid{grid-template-columns:1fr!important}
+    .steps-grid{grid-template-columns:1fr!important}
+    .stats-grid{grid-template-columns:repeat(2,1fr)!important}
+    .proof-grid{grid-template-columns:1fr!important}
+    .step-connector{display:none}
+    .hero-h1{font-size:32px!important}
+  }
+</style>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     NAVBAR — glassmorphism
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<nav style="position:fixed;top:0;left:0;right:0;z-index:1000;display:flex;align-items:center;justify-content:space-between;padding:0 32px;height:60px;background:rgba(8,12,16,.75);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid rgba(30,42,54,.6);">
+  <div style="display:flex;align-items:center;gap:10px;">
+    <img src="/logo.png" alt="Open Signum" style="width:34px;height:34px;border-radius:8px;object-fit:contain;" />
+    <span style="font-family:var(--font-mono);font-size:14px;font-weight:700;letter-spacing:.06em;">OPEN SIGNUM</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:24px;">
+    <a href="#features" style="font-size:13px;color:var(--text2);text-decoration:none;transition:color .2s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text2)'">Features</a>
+    <a href="#how-it-works" style="font-size:13px;color:var(--text2);text-decoration:none;transition:color .2s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text2)'">How It Works</a>
+    <a href="/docs" style="font-size:13px;color:var(--text2);text-decoration:none;transition:color .2s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text2)'">Docs</a>
+    <a href="#roadmap" style="font-size:13px;color:var(--text2);text-decoration:none;transition:color .2s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text2)'">Roadmap</a>
+    <a href="#token" style="font-size:13px;color:var(--purple);text-decoration:none;transition:color .2s;font-weight:500;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--purple)'">$OPENSG</a>
+    <a href={appHref} style="display:inline-flex;align-items:center;gap:6px;padding:8px 18px;border-radius:8px;background:var(--green);color:#000;font-size:13px;font-weight:600;text-decoration:none;transition:box-shadow .2s;" onmouseover="this.style.boxShadow='0 0 20px rgba(0,212,170,.3)'" onmouseout="this.style.boxShadow='none'">
+      {session ? 'Dashboard' : 'Launch App'}
+    </a>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     HERO
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<section style="position:relative;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:120px 28px 60px;overflow:hidden;">
+  <!-- Background effects -->
+  <div class="hero-grid"></div>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="particles" id="particles"></div>
+
+  <!-- Content -->
+  <div style="position:relative;text-align:center;max-width:860px;z-index:1;">
+    <!-- Badge -->
+    <div class="reveal" style="display:inline-flex;align-items:center;gap:8px;padding:6px 16px;border-radius:24px;background:rgba(0,212,170,.06);border:1px solid rgba(0,212,170,.15);margin-bottom:24px;">
+      <span style="width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s infinite;"></span>
+      <span style="font-size:12px;color:var(--green);font-family:var(--font-mono);letter-spacing:.04em;">v1.0 LIVE — OPEN SOURCE TRADING DASHBOARD</span>
+    </div>
+
+    <!-- Heading -->
+    <h1 class="hero-h1 reveal hero-glow" style="font-size:52px;font-weight:700;line-height:1.15;margin-bottom:20px;letter-spacing:-.02em;">
+      The Future of<br/>
+      <span class="gradient-text">Intelligent Trading</span>
+    </h1>
+
+    <!-- Subtitle -->
+    <p class="reveal reveal-d1" style="font-size:18px;color:var(--text2);line-height:1.7;max-width:600px;margin:0 auto 16px;">
+      Multi-asset charts, AI-powered trade signals, risk management, and portfolio tracking — all in one futuristic dashboard.
+    </p>
+
+    <!-- Terminal line -->
+    <div class="reveal reveal-d2" style="margin-bottom:36px;">
+      <code class="terminal-line" style="font-family:var(--font-mono);font-size:13px;color:var(--green);padding:8px 16px;background:rgba(0,212,170,.05);border-radius:6px;">
+        $ signum analyze --asset BTC --signal buy
+      </code>
+    </div>
+
+    <!-- CTA buttons -->
+    <div class="reveal reveal-d3" style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;">
+      <a href={appHref} class="cta-btn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        {session ? 'Go to Dashboard' : 'Connect Wallet & Start'}
+      </a>
+      <a href="/docs" style="display:inline-flex;align-items:center;gap:8px;padding:16px 32px;border-radius:12px;border:1px solid var(--border2);color:var(--text);font-size:16px;font-weight:500;text-decoration:none;transition:all .2s;background:rgba(255,255,255,.02);" onmouseover="this.style.borderColor='var(--text3)';this.style.background='rgba(255,255,255,.04)'" onmouseout="this.style.borderColor='var(--border2)';this.style.background='rgba(255,255,255,.02)'">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+        Read Docs
+      </a>
+    </div>
+  </div>
+
+  <!-- Animated chart SVG -->
+  <div class="reveal reveal-d4" style="position:relative;margin-top:60px;width:100%;max-width:700px;z-index:1;">
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:24px 20px 16px;box-shadow:0 20px 60px rgba(0,0,0,.4);">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding:0 8px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-family:var(--font-mono);font-size:14px;font-weight:700;">BTC/USD</span>
+          <span style={`font-family:var(--font-mono);font-size:13px;color:${btcUp?'var(--green)':'var(--red)'};`}>${btcPrice}</span>
+          <span style={`font-size:11px;color:${btcUp?'var(--green)':'var(--red)'};padding:2px 8px;border-radius:4px;background:${btcUp?'rgba(0,212,170,.1)':'rgba(255,77,106,.1)'};`}>{btcUp?'+':''}{btcChange.toFixed(2)}%</span>
+        </div>
+        <div style="display:flex;gap:6px;">
+          <span style="font-size:10px;color:var(--text3);padding:3px 8px;border-radius:4px;border:1px solid var(--border);">RSI</span>
+          <span style="font-size:10px;color:var(--text3);padding:3px 8px;border-radius:4px;border:1px solid var(--border);">MACD</span>
+          <span style="font-size:10px;color:var(--green);padding:3px 8px;border-radius:4px;border:1px solid rgba(0,212,170,.3);background:rgba(0,212,170,.05);">BB</span>
+        </div>
+      </div>
+      <svg viewBox="0 0 660 180" style="width:100%;display:block;">
+        <!-- Grid lines -->
+        <line x1="0" y1="45" x2="660" y2="45" stroke="var(--border)" stroke-width=".5" opacity=".5"/>
+        <line x1="0" y1="90" x2="660" y2="90" stroke="var(--border)" stroke-width=".5" opacity=".5"/>
+        <line x1="0" y1="135" x2="660" y2="135" stroke="var(--border)" stroke-width=".5" opacity=".5"/>
+        <!-- Bollinger bands (real) -->
+        {bbUpper && <path d={bbUpper} fill="none" stroke="var(--green)" stroke-width="1" opacity=".2" stroke-dasharray="4,4"/>}
+        {bbLower && <path d={bbLower} fill="none" stroke="var(--green)" stroke-width="1" opacity=".2" stroke-dasharray="4,4"/>}
+        <!-- EMA 20 (real) -->
+        {emaPath && <path d={emaPath} fill="none" stroke="var(--blue)" stroke-width="1" opacity=".3" stroke-dasharray="6,3"/>}
+        <!-- Main price line (real BTC 30d closes) -->
+        <path class="chart-line" d={chartPath} fill="none" stroke="url(#lineGrad)" stroke-width="2.5" stroke-linecap="round"/>
+        <!-- Glow -->
+        <path d={chartPath} fill="none" stroke="var(--green)" stroke-width="6" opacity=".1" filter="blur(4px)"/>
+        <!-- Pulsing dot at last price -->
+        <circle cx="660" cy={lastY} r="4" fill={btcUp?'var(--green)':'var(--red)'}>
+          <animate attributeName="r" values="4;6;4" dur="2s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" values="1;.5;1" dur="2s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="660" cy={lastY} r="12" fill={btcUp?'var(--green)':'var(--red)'} opacity=".15">
+          <animate attributeName="r" values="12;20;12" dur="2s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" values=".15;0;.15" dur="2s" repeatCount="indefinite"/>
+        </circle>
+        <defs>
+          <linearGradient id="lineGrad" x1="0" y1="0" x2="660" y2="0" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="var(--blue)"/>
+            <stop offset="50%" stop-color="var(--green)"/>
+            <stop offset="100%" stop-color="var(--green)"/>
+          </linearGradient>
+        </defs>
+      </svg>
+      <!-- Bottom tickers (real indicators) -->
+      <div style="display:flex;gap:16px;margin-top:12px;padding:8px 8px 0;border-top:1px solid var(--border);">
+        <span style="font-family:var(--font-mono);font-size:10px;color:var(--text3);">RSI <span style={`color:${rsi>70?'var(--red)':rsi<30?'var(--green)':'var(--amber)'};`}>{rsi.toFixed(1)}</span></span>
+        <span style="font-family:var(--font-mono);font-size:10px;color:var(--text3);">MACD <span style={`color:${macd.hist>=0?'var(--green)':'var(--red)'};`}>{macd.hist>=0?'+':''}{macd.hist.toFixed(2)}</span></span>
+        <span style="font-family:var(--font-mono);font-size:10px;color:var(--text3);">VOL <span style="color:var(--text2);">{btcVolume}</span></span>
+        <span style="font-family:var(--font-mono);font-size:10px;color:var(--text3);">EMA20 <span style="color:var(--blue);">${formatPrice(ema20val)}</span></span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     SCROLLING TICKER BAR
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<div style="border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:12px 0;overflow:hidden;background:var(--bg2);">
+  <div class="marquee-track">
+    {marqueeDouble.map((t, i) => (
+      <span key={i} style="display:inline-flex;align-items:center;gap:8px;white-space:nowrap;">
+        <span style="font-family:var(--font-mono);font-size:11px;font-weight:700;color:var(--text);">{t.s}</span>
+        <span style="font-family:var(--font-mono);font-size:11px;color:var(--text2);">{t.p}</span>
+        <span style={`font-family:var(--font-mono);font-size:10px;color:${t.up?'var(--green)':'var(--red)'};`}>{t.c}</span>
+        {t.mcap > 0 && <span style="font-family:var(--font-mono);font-size:9px;color:var(--text3);">MCap {formatVolume(t.mcap)}</span>}
+      </span>
+    ))}
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     STATS
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<section style="max-width:1000px;margin:0 auto;padding:80px 28px 40px;">
+  <div class="stats-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:24px;">
+    {[
+      {num: totalMarketCap > 0 ? formatVolume(totalMarketCap) : '24+', label: totalMarketCap > 0 ? 'Total Market Cap' : 'Supported Assets', sub: totalMarketCap > 0 ? 'Global Crypto Market' : 'Crypto, Forex & Stocks'},
+      {num: totalVolume24h > 0 ? formatVolume(totalVolume24h) : '3', label: totalVolume24h > 0 ? '24h Trading Volume' : 'Asset Classes', sub: totalVolume24h > 0 ? 'Across all exchanges' : 'Crypto, Forex & Stocks'},
+      {num: btcDominance > 0 ? `${btcDominance.toFixed(1)}%` : 'AI', label: btcDominance > 0 ? 'BTC Dominance' : 'Signal Engine', sub: btcDominance > 0 ? 'Bitcoin market share' : 'AI-powered analysis'},
+      {num: `${allTickers.length}+`, label: 'Live Assets', sub: 'Real-time prices on this page'},
+    ].map((s,i)=>(
+      <div class={`reveal reveal-d${i+1}`} style="text-align:center;padding:20px;">
+        <div class="stat-num">{s.num}</div>
+        <div style="font-size:14px;font-weight:600;margin-top:6px;">{s.label}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:4px;">{s.sub}</div>
+      </div>
+    ))}
+  </div>
+</section>
+
+<div class="section-connector"></div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     FEATURES
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<section id="features" style="max-width:1100px;margin:0 auto;padding:40px 28px 80px;">
+  <div class="reveal" style="text-align:center;margin-bottom:48px;">
+    <span style="font-size:12px;font-family:var(--font-mono);color:var(--green);letter-spacing:.12em;display:block;margin-bottom:10px;">FEATURES</span>
+    <h2 style="font-size:32px;font-weight:700;margin-bottom:12px;">Everything You Need to Trade</h2>
+    <p style="font-size:15px;color:var(--text2);max-width:500px;margin:0 auto;">Professional-grade tools, zero complexity. From analysis to execution in one dashboard.</p>
+  </div>
+
+  <div class="feat-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px;">
+    <!-- Card 1 -->
+    <div class="feat-card reveal reveal-d1">
+      <div class="feat-icon" style="background:rgba(0,212,170,.08);">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      </div>
+      <h3 style="font-size:16px;font-weight:600;margin-bottom:8px;">Multi-Asset Charts</h3>
+      <p style="font-size:13px;color:var(--text2);line-height:1.7;">Professional candlestick charts powered by TradingView Lightweight Charts. Crypto, forex, and stocks in a single interface.</p>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:14px;">
+        {['RSI','MACD','Bollinger','EMA'].map(t=>(
+          <span style="font-size:10px;font-family:var(--font-mono);color:var(--green);padding:3px 8px;border-radius:4px;background:rgba(0,212,170,.06);border:1px solid rgba(0,212,170,.12);">{t}</span>
+        ))}
+      </div>
+    </div>
+
+    <!-- Card 2 -->
+    <div class="feat-card reveal reveal-d2">
+      <div class="feat-icon" style="background:rgba(245,166,35,.08);">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+      </div>
+      <h3 style="font-size:16px;font-weight:600;margin-bottom:8px;">AI Trade Signals</h3>
+      <p style="font-size:13px;color:var(--text2);line-height:1.7;">AI analyzes 30-day candle data with technical indicators. BUY/SELL/HOLD with entry, SL, TP, and confidence scores.</p>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:14px;">
+        {['AI Engine','Multi-Asset','Auto-Analysis'].map(t=>(
+          <span style="font-size:10px;font-family:var(--font-mono);color:var(--amber);padding:3px 8px;border-radius:4px;background:rgba(245,166,35,.06);border:1px solid rgba(245,166,35,.12);">{t}</span>
+        ))}
+      </div>
+    </div>
+
+    <!-- Card 3 -->
+    <div class="feat-card reveal reveal-d3">
+      <div class="feat-icon" style="background:rgba(255,77,106,.08);">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      </div>
+      <h3 style="font-size:16px;font-weight:600;margin-bottom:8px;">Risk Calculator</h3>
+      <p style="font-size:13px;color:var(--text2);line-height:1.7;">Precision position sizing with visual price levels. Calculate risk/reward ratio, max loss, and optimal lot size instantly.</p>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:14px;">
+        {['Position Size','R:R Ratio','Visual'].map(t=>(
+          <span style="font-size:10px;font-family:var(--font-mono);color:var(--red);padding:3px 8px;border-radius:4px;background:rgba(255,77,106,.06);border:1px solid rgba(255,77,106,.12);">{t}</span>
+        ))}
+      </div>
+    </div>
+
+    <!-- Card 4 -->
+    <div class="feat-card reveal reveal-d4">
+      <div class="feat-icon" style="background:rgba(59,158,255,.08);">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M12 4v16"/><path d="M2 12h20"/></svg>
+      </div>
+      <h3 style="font-size:16px;font-weight:600;margin-bottom:8px;">Portfolio Tracker</h3>
+      <p style="font-size:13px;color:var(--text2);line-height:1.7;">Multi-asset portfolio with real-time price updates. Total value, P&L, and per-position returns at a glance.</p>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:14px;">
+        {['Real-time','Multi-Asset','P&L'].map(t=>(
+          <span style="font-size:10px;font-family:var(--font-mono);color:var(--blue);padding:3px 8px;border-radius:4px;background:rgba(59,158,255,.06);border:1px solid rgba(59,158,255,.12);">{t}</span>
+        ))}
+      </div>
+    </div>
+
+    <!-- Card 5 -->
+    <div class="feat-card reveal reveal-d5">
+      <div class="feat-icon" style="background:rgba(167,139,250,.08);">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--purple)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M22 10H2"/><path d="M6 14h.01"/><path d="M10 14h.01"/></svg>
+      </div>
+      <h3 style="font-size:16px;font-weight:600;margin-bottom:8px;">Wallet Authentication</h3>
+      <p style="font-size:13px;color:var(--text2);line-height:1.7;">Sign in with Ethereum or Solana wallets. SIWE standard. No passwords, no emails — your address is your identity.</p>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:14px;">
+        {['MetaMask','Phantom','Solflare'].map(t=>(
+          <span style="font-size:10px;font-family:var(--font-mono);color:var(--purple);padding:3px 8px;border-radius:4px;background:rgba(167,139,250,.06);border:1px solid rgba(167,139,250,.12);">{t}</span>
+        ))}
+      </div>
+    </div>
+
+    <!-- Card 6 -->
+    <div class="feat-card reveal reveal-d6">
+      <div class="feat-icon" style="background:rgba(0,212,170,.08);">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      </div>
+      <h3 style="font-size:16px;font-weight:600;margin-bottom:8px;">Real-Time Market Data</h3>
+      <p style="font-size:13px;color:var(--text2);line-height:1.7;">Live crypto, forex, and stock data streams. Real-time prices, OHLC candles, and volume — no setup required.</p>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:14px;">
+        {['Crypto','Forex','Stocks'].map(t=>(
+          <span style="font-size:10px;font-family:var(--font-mono);color:var(--green);padding:3px 8px;border-radius:4px;background:rgba(0,212,170,.06);border:1px solid rgba(0,212,170,.12);">{t}</span>
+        ))}
+      </div>
+    </div>
+
+    <!-- New features row -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:18px;">
+      {[
+        { icon:'🔍', title:'Market Screener', desc:'Scan all assets by RSI, MACD, Bollinger, EMA. Preset filters and auto-generated signals.', color:'var(--blue)' },
+        { icon:'🐋', title:'Whale Tracker', desc:'Monitor large wallet movements. Detect exchange inflows/outflows and accumulation patterns.', color:'var(--purple)' },
+        { icon:'👥', title:'Copy Trading', desc:'Follow top signal providers, copy trades with one click. Verified performance tracking.', color:'var(--green)' },
+        { icon:'🏆', title:'Leaderboard', desc:'Compete with other traders. Rankings by P&L, win rate, and trade count with badges.', color:'var(--amber)' },
+      ].map((f,i) => (
+        <div class={`feat-card reveal reveal-d${(i%3)+1}`} style="padding:18px;">
+          <div style="font-size:24px;margin-bottom:10px;">{f.icon}</div>
+          <h3 style="font-size:14px;font-weight:600;margin-bottom:6px;">{f.title}</h3>
+          <p style="font-size:12px;color:var(--text2);line-height:1.6;">{f.desc}</p>
+        </div>
+      ))}
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:14px;">
+      {[
+        { icon:'📊', title:'Multi-Chart', desc:'View 2-4 charts side by side. Independent symbols and timeframes per slot.', color:'var(--blue)' },
+        { icon:'😱', title:'Fear & Greed', desc:'Market sentiment gauge computed from real-time data. Visual indicator with breakdown.', color:'var(--amber)' },
+        { icon:'📅', title:'P&L Calendar', desc:'GitHub-style heatmap of your daily profits and losses. Track your consistency.', color:'var(--green)' },
+        { icon:'🤖', title:'AI Chat', desc:'Ask questions about markets, strategies, and analysis. AI-powered trading assistant.', color:'var(--purple)' },
+      ].map((f,i) => (
+        <div class={`feat-card reveal reveal-d${(i%3)+1}`} style="padding:18px;">
+          <div style="font-size:24px;margin-bottom:10px;">{f.icon}</div>
+          <h3 style="font-size:14px;font-weight:600;margin-bottom:6px;">{f.title}</h3>
+          <p style="font-size:12px;color:var(--text2);line-height:1.6;">{f.desc}</p>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
+
+<div class="section-connector"></div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     HOW IT WORKS
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<section id="how-it-works" style="max-width:1000px;margin:0 auto;padding:40px 28px 80px;">
+  <div class="reveal" style="text-align:center;margin-bottom:48px;">
+    <span style="font-size:12px;font-family:var(--font-mono);color:var(--blue);letter-spacing:.12em;display:block;margin-bottom:10px;">HOW IT WORKS</span>
+    <h2 style="font-size:32px;font-weight:700;margin-bottom:12px;">Three Steps to Smarter Trading</h2>
+    <p style="font-size:15px;color:var(--text2);max-width:480px;margin:0 auto;">From wallet connection to AI-powered signals in under a minute.</p>
+  </div>
+
+  <div class="steps-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:24px;position:relative;">
+    <div class="step-card reveal reveal-d1">
+      <div class="step-connector"></div>
+      <div class="step-num">1</div>
+      <h3 style="font-size:16px;font-weight:600;margin-bottom:8px;">Connect Wallet</h3>
+      <p style="font-size:13px;color:var(--text2);line-height:1.7;">Sign in with your Ethereum wallet using SIWE. No passwords, no emails — your address is your identity.</p>
+      <div style="margin-top:14px;display:flex;justify-content:center;gap:8px;">
+        <span style="font-size:10px;padding:3px 10px;border-radius:12px;background:var(--bg4);color:var(--text3);border:1px solid var(--border);">MetaMask</span>
+        <span style="font-size:10px;padding:3px 10px;border-radius:12px;background:var(--bg4);color:var(--text3);border:1px solid var(--border);">Coinbase</span>
+        <span style="font-size:10px;padding:3px 10px;border-radius:12px;background:var(--bg4);color:var(--text3);border:1px solid var(--border);">Brave</span>
+      </div>
+    </div>
+
+    <div class="step-card reveal reveal-d2">
+      <div class="step-connector"></div>
+      <div class="step-num">2</div>
+      <h3 style="font-size:16px;font-weight:600;margin-bottom:8px;">Analyze Markets</h3>
+      <p style="font-size:13px;color:var(--text2);line-height:1.7;">Browse real-time charts, review technical indicators, and let AI generate trade signals for any asset.</p>
+      <div style="margin-top:14px;display:flex;justify-content:center;gap:8px;">
+        <span style="font-size:10px;padding:3px 10px;border-radius:12px;background:var(--bg4);color:var(--text3);border:1px solid var(--border);">Charts</span>
+        <span style="font-size:10px;padding:3px 10px;border-radius:12px;background:var(--bg4);color:var(--text3);border:1px solid var(--border);">AI Signals</span>
+        <span style="font-size:10px;padding:3px 10px;border-radius:12px;background:var(--bg4);color:var(--text3);border:1px solid var(--border);">Indicators</span>
+      </div>
+    </div>
+
+    <div class="step-card reveal reveal-d3">
+      <div class="step-num">3</div>
+      <h3 style="font-size:16px;font-weight:600;margin-bottom:8px;">Execute Trades</h3>
+      <p style="font-size:13px;color:var(--text2);line-height:1.7;">Use the risk calculator for position sizing, then track your trades in the portfolio tracker.</p>
+      <div style="margin-top:14px;display:flex;justify-content:center;gap:8px;">
+        <span style="font-size:10px;padding:3px 10px;border-radius:12px;background:var(--bg4);color:var(--text3);border:1px solid var(--border);">Risk Calc</span>
+        <span style="font-size:10px;padding:3px 10px;border-radius:12px;background:var(--bg4);color:var(--text3);border:1px solid var(--border);">Execute</span>
+        <span style="font-size:10px;padding:3px 10px;border-radius:12px;background:var(--bg4);color:var(--text3);border:1px solid var(--border);">Track P&L</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="section-connector"></div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     DATA SOURCES — animated cards
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<section style="max-width:900px;margin:0 auto;padding:40px 28px 80px;">
+  <div class="reveal" style="text-align:center;margin-bottom:40px;">
+    <span style="font-size:12px;font-family:var(--font-mono);color:var(--purple);letter-spacing:.12em;display:block;margin-bottom:10px;">POWERED BY</span>
+    <h2 style="font-size:32px;font-weight:700;margin-bottom:12px;">Built for Traders</h2>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px;">
+    {[
+      {name:'Crypto Market Data',desc:'Real-time prices, OHLC, market cap, volume',tag:'LIVE',color:'var(--green)'},
+      {name:'Forex Rates',desc:'Official foreign exchange reference rates',tag:'LIVE',color:'var(--blue)'},
+      {name:'Stock Data',desc:'US equities prices, OHLC, and historical data',tag:'LIVE',color:'var(--purple)'},
+      {name:'AI Signal Engine',desc:'AI-powered trade signal generation',tag:'AI',color:'var(--amber)'},
+      {name:'Wallet Authentication',desc:'Wallet-based auth — EVM & Solana',tag:'SECURE',color:'var(--purple)'},
+      {name:'Open Source',desc:'Fully open source — inspect, modify, self-host',tag:'OSS',color:'var(--green)'},
+    ].map((d,i)=>(
+      <div class={`reveal reveal-d${(i%3)+1}`} style={`display:flex;align-items:center;gap:14px;padding:16px 18px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;transition:border-color .3s,transform .3s;cursor:default;`} onmouseover="this.style.borderColor='var(--border2)';this.style.transform='translateX(4px)'" onmouseout="this.style.borderColor='var(--border)';this.style.transform='none'">
+        <div style={`width:10px;height:10px;border-radius:50%;background:${d.color};box-shadow:0 0 10px ${d.color};flex-shrink:0;`}></div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:14px;font-weight:500;">{d.name}</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px;">{d.desc}</div>
+        </div>
+        <span style={`font-size:10px;font-family:var(--font-mono);color:${d.color};padding:3px 10px;border-radius:6px;background:rgba(0,0,0,.3);border:1px solid ${d.color}33;white-space:nowrap;`}>{d.tag}</span>
+      </div>
+    ))}
+  </div>
+</section>
+
+<div class="section-connector"></div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     SOCIAL PROOF
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<section style="max-width:1000px;margin:0 auto;padding:40px 28px 80px;">
+  <div class="reveal" style="text-align:center;margin-bottom:40px;">
+    <span style="font-size:12px;font-family:var(--font-mono);color:var(--amber);letter-spacing:.12em;display:block;margin-bottom:10px;">COMMUNITY</span>
+    <h2 style="font-size:32px;font-weight:700;">What Traders Say</h2>
+  </div>
+  <div class="proof-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">
+    {[
+      {q:'The AI signals are surprisingly accurate for the price. I use it as a starting point for my own analysis.',a:'0x4a2E...c8F1',r:'DeFi Trader'},
+      {q:'Finally a trading tool that lets me sign in with my wallet. No more passwords. The UX is incredible.',a:'0x7bD3...91A2',r:'NFT Collector'},
+      {q:'Risk calculator alone is worth it. Saved me from several bad position sizes. The whole dashboard is very clean.',a:'0x1fC8...d4E7',r:'Swing Trader'},
+    ].map((p,i)=>(
+      <div class={`proof-card reveal reveal-d${i+1}`}>
+        <p style="font-size:13px;color:var(--text2);line-height:1.7;margin:0 0 16px;padding-left:8px;">{p.q}</p>
+        <div style="display:flex;align-items:center;gap:10px;padding-top:12px;border-top:1px solid var(--border);">
+          <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--green),var(--blue));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#000;">{p.a.slice(2,4)}</div>
+          <div>
+            <div style="font-size:12px;font-family:var(--font-mono);color:var(--text);">{p.a}</div>
+            <div style="font-size:10px;color:var(--text3);">{p.r}</div>
+          </div>
+        </div>
+      </div>
+    ))}
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     $OPENSG TOKEN
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<section id="token" style="position:relative;max-width:900px;margin:0 auto;padding:40px 28px 80px;overflow:hidden;">
+  <!-- Background glow -->
+  <div style="position:absolute;top:50%;left:50%;width:600px;height:600px;background:radial-gradient(circle,rgba(167,139,250,.06) 0%,transparent 70%);transform:translate(-50%,-50%);pointer-events:none;"></div>
+
+  <div class="reveal" style="text-align:center;margin-bottom:48px;position:relative;z-index:1;">
+    <span style="font-size:12px;font-family:var(--font-mono);color:var(--purple);letter-spacing:.12em;display:block;margin-bottom:10px;">TOKEN</span>
+    <h2 style="font-size:32px;font-weight:700;margin-bottom:12px;">
+      Introducing <span class="gradient-text">$OPENSG</span>
+    </h2>
+    <p style="font-size:15px;color:var(--text2);max-width:520px;margin:0 auto;line-height:1.7;">
+      The native token powering the Open Signum ecosystem. Governance, premium features, and community rewards — all in one token.
+    </p>
+  </div>
+
+  <div style="position:relative;z-index:1;">
+    <!-- Token card -->
+    <div class="reveal reveal-d1" style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:32px;margin-bottom:24px;position:relative;overflow:hidden;">
+      <!-- Shimmer effect -->
+      <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(135deg,transparent 40%,rgba(167,139,250,.03) 50%,transparent 60%);pointer-events:none;"></div>
+
+      <div style="display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:28px;">
+        <div style="position:relative;">
+          <img src="/logo.png" alt="$OPENSG" style="width:56px;height:56px;border-radius:50%;border:2px solid var(--purple);" />
+          <div style="position:absolute;inset:-4px;border-radius:50%;border:1px solid rgba(167,139,250,.2);animation:pulse 3s ease-in-out infinite;"></div>
+        </div>
+        <div>
+          <div style="font-family:var(--font-mono);font-size:24px;font-weight:700;letter-spacing:.03em;">$OPENSG</div>
+          <div style="font-size:12px;color:var(--text3);">Open Signum Token</div>
+        </div>
+      </div>
+
+      <!-- Coming Soon badge -->
+      <div style="display:flex;justify-content:center;margin-bottom:28px;">
+        <div style="display:inline-flex;align-items:center;gap:8px;padding:10px 24px;border-radius:24px;background:rgba(167,139,250,.08);border:1px solid rgba(167,139,250,.2);">
+          <div style="width:8px;height:8px;border-radius:50%;background:var(--purple);animation:pulse 2s ease-in-out infinite;"></div>
+          <span style="font-family:var(--font-mono);font-size:13px;font-weight:600;color:var(--purple);letter-spacing:.06em;">COMING SOON</span>
+        </div>
+      </div>
+
+      <!-- Utility cards -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+        {[
+          { icon: '🏛️', title: 'Governance', desc: 'Vote on platform features, AI model upgrades, and treasury allocation' },
+          { icon: '⚡', title: 'Premium Access', desc: 'Unlock advanced AI signals, priority analysis, and exclusive indicators' },
+          { icon: '🎁', title: 'Rewards', desc: 'Earn tokens for active trading, signal accuracy, and community contributions' },
+        ].map((u, i) => (
+          <div class={`reveal reveal-d${i+1}`} style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:18px;text-align:center;transition:border-color .3s,transform .3s;" onmouseover="this.style.borderColor='var(--purple)';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--border)';this.style.transform='none'">
+            <div style="font-size:28px;margin-bottom:10px;">{u.icon}</div>
+            <div style="font-size:14px;font-weight:600;margin-bottom:6px;">{u.title}</div>
+            <div style="font-size:11px;color:var(--text3);line-height:1.6;">{u.desc}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    <!-- Roadmap mini -->
+    <div class="reveal reveal-d2" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
+      {[
+        { phase: 'Phase 1', title: 'Platform Launch', status: 'active' },
+        { phase: 'Phase 2', title: 'Token Generation', status: 'upcoming' },
+        { phase: 'Phase 3', title: 'Governance Live', status: 'upcoming' },
+        { phase: 'Phase 4', title: 'Staking & Rewards', status: 'upcoming' },
+      ].map((p, i) => (
+        <div style={`padding:14px;border-radius:10px;background:var(--bg2);border:1px solid ${p.status === 'active' ? 'var(--purple)' : 'var(--border)'};text-align:center;`}>
+          <div style={`font-size:10px;font-family:var(--font-mono);color:${p.status === 'active' ? 'var(--purple)' : 'var(--text3)'};letter-spacing:.08em;margin-bottom:6px;`}>{p.phase}</div>
+          <div style="font-size:12px;font-weight:600;">{p.title}</div>
+          {p.status === 'active' && (
+            <div style="margin-top:6px;display:inline-flex;align-items:center;gap:4px;font-size:9px;font-family:var(--font-mono);color:var(--green);padding:2px 8px;border-radius:8px;background:rgba(0,212,170,.08);">
+              <div style="width:5px;height:5px;border-radius:50%;background:var(--green);"></div>
+              LIVE
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
+
+<div class="section-connector"></div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     ROADMAP
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<section id="roadmap" style="max-width:900px;margin:0 auto;padding:40px 28px 80px;position:relative;">
+  <div class="reveal" style="text-align:center;margin-bottom:56px;">
+    <span style="font-size:12px;font-family:var(--font-mono);color:var(--green);letter-spacing:.12em;display:block;margin-bottom:10px;">ROADMAP</span>
+    <h2 style="font-size:32px;font-weight:700;margin-bottom:12px;">Building the Future of Trading</h2>
+    <p style="font-size:15px;color:var(--text2);max-width:500px;margin:0 auto;">Our journey from concept to a fully decentralized trading intelligence platform.</p>
+  </div>
+
+  <!-- Timeline -->
+  <div style="position:relative;">
+    <!-- Vertical line -->
+    <div style="position:absolute;left:50%;top:0;bottom:0;width:2px;background:linear-gradient(to bottom,var(--green),var(--purple),var(--border),var(--border));transform:translateX(-50%);"></div>
+
+    {[
+      {
+        q: 'Q1 2026', phase: 'Phase 1', title: 'Foundation',
+        status: 'done',
+        items: [
+          'Core trading dashboard with real-time data',
+          'AI-powered trade signal generation',
+          'Multi-asset support — Crypto, Forex, Stocks',
+          'Wallet authentication (EVM & Solana)',
+          'Technical charts with indicators (RSI, MACD, Bollinger, EMA)',
+        ],
+        color: 'var(--green)',
+      },
+      {
+        q: 'Q2 2026', phase: 'Phase 2', title: 'Intelligence',
+        status: 'active',
+        items: [
+          'Advanced AI chat assistant for market analysis',
+          'Backtesting engine with multiple strategies',
+          'Correlation matrix & market heatmap',
+          'Trading journal & performance analytics',
+          'Price alerts with browser notifications',
+        ],
+        color: 'var(--blue)',
+      },
+      {
+        q: 'Q3 2026', phase: 'Phase 3', title: '$OPENSG Token',
+        status: 'upcoming',
+        items: [
+          '$OPENSG token generation event',
+          'Governance system — community-driven decisions',
+          'Premium tier with advanced AI models',
+          'Staking rewards for active traders',
+          'Revenue sharing for token holders',
+        ],
+        color: 'var(--purple)',
+      },
+      {
+        q: 'Q4 2026', phase: 'Phase 4', title: 'Ecosystem',
+        status: 'upcoming',
+        items: [
+          'Social trading — follow top signal providers',
+          'On-chain portfolio tracking & analytics',
+          'Mobile app (PWA) for trading on the go',
+          'API access for third-party integrations',
+          'Multi-language support & global expansion',
+        ],
+        color: 'var(--amber)',
+      },
+      {
+        q: '2027+', phase: 'Phase 5', title: 'Decentralization',
+        status: 'upcoming',
+        items: [
+          'Fully decentralized signal marketplace',
+          'Community-trained AI models via federated learning',
+          'Cross-chain portfolio aggregation',
+          'DAO treasury management',
+          'Open Signum Protocol — SDK for builders',
+        ],
+        color: 'var(--red)',
+      },
+    ].map((phase, i) => (
+      <div class={`reveal reveal-d${(i % 3) + 1}`} style={`display:flex;align-items:flex-start;margin-bottom:48px;${i % 2 === 0 ? 'flex-direction:row' : 'flex-direction:row-reverse'};gap:0;position:relative;`}>
+        {/* Content card */}
+        <div style={`width:calc(50% - 32px);${i % 2 === 0 ? 'text-align:right;padding-right:0;' : 'text-align:left;padding-left:0;'}`}>
+          <div style={`background:var(--bg2);border:1px solid ${phase.status === 'active' ? phase.color : 'var(--border)'};border-radius:12px;padding:22px;transition:border-color .3s,transform .3s;`} onmouseover={`this.style.borderColor='${phase.color}';this.style.transform='translateY(-3px)'`} onmouseout={`this.style.borderColor='${phase.status === 'active' ? phase.color : 'var(--border)'}';this.style.transform='none'`}>
+            <div style={`display:inline-flex;align-items:center;gap:6px;font-size:10px;font-family:var(--font-mono);color:${phase.color};letter-spacing:.08em;margin-bottom:8px;padding:3px 10px;border-radius:6px;background:${phase.color}11;`}>
+              {phase.status === 'done' && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>}
+              {phase.status === 'active' && <div style="width:6px;height:6px;border-radius:50%;background:currentColor;animation:pulse 2s ease-in-out infinite;"></div>}
+              {phase.q} — {phase.phase}
+            </div>
+            <div style="font-size:18px;font-weight:700;margin-bottom:12px;">{phase.title}</div>
+            <ul style={`list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px;${i % 2 === 0 ? 'align-items:flex-end;' : 'align-items:flex-start;'}`}>
+              {phase.items.map(item => (
+                <li style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);line-height:1.5;">
+                  <div style={`width:4px;height:4px;border-radius:50%;background:${phase.status === 'done' ? 'var(--green)' : phase.status === 'active' ? phase.color : 'var(--border2)'};flex-shrink:0;`}></div>
+                  <span style={phase.status === 'done' ? 'color:var(--text3);' : ''}>{item}</span>
+                </li>
+              ))}
+            </ul>
+            {phase.status === 'done' && (
+              <div style="margin-top:12px;display:inline-flex;align-items:center;gap:4px;font-size:10px;font-family:var(--font-mono);color:var(--green);padding:3px 10px;border-radius:6px;background:rgba(0,212,170,.08);">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>
+                COMPLETED
+              </div>
+            )}
+            {phase.status === 'active' && (
+              <div style="margin-top:12px;display:inline-flex;align-items:center;gap:4px;font-size:10px;font-family:var(--font-mono);color:var(--blue);padding:3px 10px;border-radius:6px;background:rgba(59,158,255,.08);">
+                <div style="width:5px;height:5px;border-radius:50%;background:var(--blue);animation:pulse 2s ease-in-out infinite;"></div>
+                IN PROGRESS
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Center dot */}
+        <div style="width:64px;display:flex;justify-content:center;flex-shrink:0;padding-top:24px;">
+          <div style={`width:${phase.status === 'active' ? '16px' : '12px'};height:${phase.status === 'active' ? '16px' : '12px'};border-radius:50%;background:${phase.status === 'upcoming' ? 'var(--bg3)' : phase.color};border:3px solid ${phase.color};box-shadow:0 0 ${phase.status === 'active' ? '12px' : '0px'} ${phase.color}44;transition:box-shadow .3s;`}></div>
+        </div>
+
+        {/* Spacer for the other side */}
+        <div style="width:calc(50% - 32px);"></div>
+      </div>
+    ))}
+  </div>
+</section>
+
+<div class="section-connector"></div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     FINAL CTA
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<section style="position:relative;text-align:center;padding:80px 28px 100px;overflow:hidden;">
+  <div class="orb" style="width:500px;height:500px;background:rgba(0,212,170,.06);top:50%;left:50%;transform:translate(-50%,-50%);animation:orbFloat 10s ease-in-out infinite;"></div>
+  <div style="position:relative;z-index:1;">
+    <div class="reveal">
+      <h2 style="font-size:38px;font-weight:700;margin-bottom:12px;">
+        Ready to Trade <span class="gradient-text">Smarter?</span>
+      </h2>
+      <p style="font-size:16px;color:var(--text2);margin-bottom:36px;max-width:480px;margin-left:auto;margin-right:auto;">
+        Connect your wallet and unlock AI-powered trading tools. Real-time market data, professional charts, zero complexity.
+      </p>
+    </div>
+    <div class="reveal reveal-d1">
+      <a href={appHref} class="cta-btn" style="font-size:18px;padding:18px 44px;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        {session ? 'Open Dashboard' : 'Launch Open Signum Copilot'}
+      </a>
+    </div>
+    <p class="reveal reveal-d2" style="font-size:11px;color:var(--text3);margin-top:20px;">No email required. Sign in with your wallet. Open source.</p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     FOOTER
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<footer style="border-top:1px solid var(--border);padding:28px 32px;background:var(--bg2);">
+  <div style="max-width:1100px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="width:24px;height:24px;border-radius:6px;background:linear-gradient(135deg,var(--green),var(--blue));display:flex;align-items:center;justify-content:center;">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      </div>
+      <span style="font-family:var(--font-mono);font-size:12px;color:var(--text3);">Open Signum Copilot v1.0</span>
+    </div>
+    <div style="display:flex;gap:20px;">
+      <a href="/docs" style="font-size:12px;color:var(--text3);text-decoration:none;">Docs</a>
+      <a href="/docs/features" style="font-size:12px;color:var(--text3);text-decoration:none;">Features</a>
+      <a href="/docs/api-setup" style="font-size:12px;color:var(--text3);text-decoration:none;">API Setup</a>
+    </div>
+    <div style="font-size:11px;color:var(--text3);">
+      Crypto &middot; Forex &middot; Stocks &middot; Not financial advice
+    </div>
+  </div>
+</footer>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     CLIENT SCRIPTS — scroll reveal, particles
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<script>
+  // Scroll-reveal observer
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); } });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+  // Trigger chart-line animation on visibility
+  const chartIO = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); } });
+  }, { threshold: 0.3 });
+  document.querySelectorAll('.chart-line').forEach(el => chartIO.observe(el));
+
+  // Generate floating particles
+  const pc = document.getElementById('particles');
+  if (pc) {
+    for (let i = 0; i < 30; i++) {
+      const p = document.createElement('div');
+      p.className = 'particle';
+      p.style.left = Math.random() * 100 + '%';
+      p.style.bottom = '-10px';
+      p.style.animationDuration = (8 + Math.random() * 12) + 's';
+      p.style.animationDelay = (Math.random() * 10) + 's';
+      p.style.width = p.style.height = (1 + Math.random() * 2) + 'px';
+      pc.appendChild(p);
+    }
+  }
+
+  // Navbar scroll effect
+  const nav = document.querySelector('nav');
+  if (nav) {
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 20) {
+        (nav as HTMLElement).style.borderBottomColor = 'rgba(30,42,54,.9)';
+        (nav as HTMLElement).style.background = 'rgba(8,12,16,.88)';
+      } else {
+        (nav as HTMLElement).style.borderBottomColor = 'rgba(30,42,54,.6)';
+        (nav as HTMLElement).style.background = 'rgba(8,12,16,.75)';
+      }
+    }, { passive: true });
+  }
+</script>
+</Base>

@@ -1,0 +1,11 @@
+---
+import Base from '../../layouts/Base.astro';
+import App from '../../components/App';
+
+const session = (Astro.locals as any).session;
+const walletAddress = session?.address ?? '';
+const walletChain = session?.chain ?? 'evm';
+---
+<Base title="Dashboard — Open Signum Copilot">
+  <App client:load walletAddress={walletAddress} walletChain={walletChain} />
+</Base>

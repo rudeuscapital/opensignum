@@ -1,0 +1,193 @@
+---
+import Docs from '../../layouts/Docs.astro';
+---
+<Docs title="Features" active="/docs/features">
+  <h1 style="font-size:28px;font-weight:700;margin-bottom:8px;">Features</h1>
+  <p style="font-size:15px;color:var(--text2);line-height:1.7;margin-bottom:32px;">
+    Detailed overview of every feature in Open Signum Copilot.
+  </p>
+
+  <!-- Charts -->
+  <h2 style="font-size:20px;font-weight:600;margin-bottom:12px;padding-top:16px;border-top:1px solid var(--border);">
+    <span style="color:var(--green);">01</span> Multi-Asset Charts
+  </h2>
+  <p style="font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:12px;">
+    Professional candlestick charts powered by TradingView's Lightweight Charts library. Supports three asset classes with multiple timeframes.
+  </p>
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:24px;">
+    <div style="font-size:12px;font-weight:600;margin-bottom:8px;">Technical Indicators</div>
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;">
+      {[
+        { name: 'RSI (14)', desc: 'Relative Strength Index — overbought/oversold detection' },
+        { name: 'MACD', desc: 'Moving Average Convergence Divergence — momentum & trend' },
+        { name: 'Bollinger Bands', desc: '20-period bands — volatility & mean reversion' },
+        { name: 'EMA Trend', desc: '20-period EMA — trend direction indicator' },
+      ].map(i => (
+        <div style="padding:8px 10px;background:var(--bg3);border-radius:6px;">
+          <div style="font-size:12px;font-weight:500;color:var(--green);font-family:var(--font-mono);">{i.name}</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px;">{i.desc}</div>
+        </div>
+      ))}
+    </div>
+  </div>
+
+  <!-- AI Signals -->
+  <h2 style="font-size:20px;font-weight:600;margin-bottom:12px;padding-top:16px;border-top:1px solid var(--border);">
+    <span style="color:var(--amber);">02</span> AI Trade Signals
+  </h2>
+  <p style="font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:12px;">
+    The AI engine analyzes 30 days of candle data combined with technical indicators to generate trade signals. Each signal includes:
+  </p>
+  <ul style="font-size:14px;color:var(--text2);line-height:2;padding-left:20px;margin-bottom:12px;">
+    <li><strong style="color:var(--text);">Signal Type</strong> — BUY, SELL, or HOLD recommendation</li>
+    <li><strong style="color:var(--text);">Entry Price</strong> — Suggested entry point</li>
+    <li><strong style="color:var(--text);">Stop Loss (SL)</strong> — Risk management level</li>
+    <li><strong style="color:var(--text);">Take Profit (TP)</strong> — Target price</li>
+    <li><strong style="color:var(--text);">Risk/Reward Ratio</strong> — Calculated from entry, SL, and TP</li>
+    <li><strong style="color:var(--text);">Confidence Score</strong> — 0-100% confidence level</li>
+    <li><strong style="color:var(--text);">Three-Score Breakdown</strong> — Technical, fundamental, and risk scores</li>
+  </ul>
+  <div style="padding:12px;background:rgba(245,166,35,0.08);border:1px solid rgba(245,166,35,0.2);border-radius:8px;margin-bottom:24px;">
+    <p style="font-size:12px;color:var(--amber);line-height:1.6;margin:0;">
+      <strong>Requires:</strong> AI engine API key configured in server <code style="background:var(--bg3);padding:2px 6px;border-radius:3px;font-size:11px;">.env</code> file. See <a href="/docs/api-setup" style="color:var(--amber);">API Setup</a> for details.
+    </p>
+  </div>
+
+  <!-- Risk Calculator -->
+  <h2 style="font-size:20px;font-weight:600;margin-bottom:12px;padding-top:16px;border-top:1px solid var(--border);">
+    <span style="color:var(--red);">03</span> Risk Calculator
+  </h2>
+  <p style="font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:12px;">
+    Position sizing tool that calculates optimal lot size based on your capital and risk tolerance.
+  </p>
+  <ul style="font-size:14px;color:var(--text2);line-height:2;padding-left:20px;margin-bottom:24px;">
+    <li><strong style="color:var(--text);">Inputs:</strong> Capital, risk %, entry price, stop loss, take profit</li>
+    <li><strong style="color:var(--text);">Outputs:</strong> Position size, risk amount, reward amount, R:R ratio</li>
+    <li><strong style="color:var(--text);">Visual:</strong> Price level indicator showing entry, SL, and TP positions</li>
+    <li>No API key required — works offline</li>
+  </ul>
+
+  <!-- Portfolio -->
+  <h2 style="font-size:20px;font-weight:600;margin-bottom:12px;padding-top:16px;border-top:1px solid var(--border);">
+    <span style="color:var(--blue);">04</span> Portfolio Tracker
+  </h2>
+  <p style="font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:12px;">
+    Track multi-asset positions with real-time price updates.
+  </p>
+  <ul style="font-size:14px;color:var(--text2);line-height:2;padding-left:20px;margin-bottom:24px;">
+    <li>Add positions across crypto, forex, and stocks</li>
+    <li>Real-time total value and P&L calculation</li>
+    <li>Individual position returns with percentage change</li>
+    <li>One-click position removal</li>
+    <li>No API key required</li>
+  </ul>
+
+  <!-- Screener -->
+  <h2 style="font-size:20px;font-weight:600;margin-bottom:12px;padding-top:16px;border-top:1px solid var(--border);">
+    <span style="color:var(--blue);">05</span> Market Screener
+  </h2>
+  <p style="font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:12px;">
+    Scan all assets by technical conditions. Filter by RSI, MACD, Bollinger Bands, EMA, and more.
+  </p>
+  <ul style="font-size:14px;color:var(--text2);line-height:2;padding-left:20px;margin-bottom:24px;">
+    <li>Preset filters: Oversold, Overbought, Bullish MACD, Uptrend, BB Dip, Big Movers</li>
+    <li>Custom filter combinations with numeric inputs</li>
+    <li>Sortable columns (price, change, RSI, MACD, volume)</li>
+    <li>Auto-generated BUY/SELL/NEUTRAL signal per asset</li>
+  </ul>
+
+  <!-- Copy Trading -->
+  <h2 style="font-size:20px;font-weight:600;margin-bottom:12px;padding-top:16px;border-top:1px solid var(--border);">
+    <span style="color:var(--green);">06</span> Copy Trading
+  </h2>
+  <p style="font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:12px;">
+    Follow top signal providers and copy their trades. Social trading for the decentralized era.
+  </p>
+  <ul style="font-size:14px;color:var(--text2);line-height:2;padding-left:20px;margin-bottom:24px;">
+    <li>Browse shared signals from other traders</li>
+    <li>Follow/unfollow signal providers</li>
+    <li>One-click signal copy with full trade details</li>
+    <li>Verified performance badges</li>
+    <li>Track all your copied signals in one place</li>
+  </ul>
+
+  <!-- Whale Tracker -->
+  <h2 style="font-size:20px;font-weight:600;margin-bottom:12px;padding-top:16px;border-top:1px solid var(--border);">
+    <span style="color:var(--purple);">07</span> Whale Tracker
+  </h2>
+  <p style="font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:12px;">
+    Monitor large wallet movements across major assets. Detect exchange inflows/outflows for sentiment analysis.
+  </p>
+  <ul style="font-size:14px;color:var(--text2);line-height:2;padding-left:20px;margin-bottom:24px;">
+    <li>Track large transactions in real-time</li>
+    <li>Exchange flow detection (to/from exchange, wallet transfer)</li>
+    <li>Net flow statistics for accumulation/distribution signals</li>
+    <li>Filterable by type and minimum value ($10K to $10M+)</li>
+  </ul>
+
+  <!-- Leaderboard -->
+  <h2 style="font-size:20px;font-weight:600;margin-bottom:12px;padding-top:16px;border-top:1px solid var(--border);">
+    <span style="color:var(--amber);">08</span> Leaderboard
+  </h2>
+  <p style="font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:12px;">
+    Compete with other traders. Rankings by P&L, win rate, and trade count.
+  </p>
+  <ul style="font-size:14px;color:var(--text2);line-height:2;padding-left:20px;margin-bottom:24px;">
+    <li>Top 3 podium with badges and streaks</li>
+    <li>Sortable by P&L, win rate, or most active</li>
+    <li>Win rate progress bars and performance metrics</li>
+  </ul>
+
+  <!-- Fear & Greed -->
+  <h2 style="font-size:20px;font-weight:600;margin-bottom:12px;padding-top:16px;border-top:1px solid var(--border);">
+    <span style="color:var(--amber);">09</span> Fear & Greed Index
+  </h2>
+  <p style="font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:12px;">
+    Market sentiment gauge computed from real-time data — market cap changes, volume ratios, and BTC dominance.
+  </p>
+  <ul style="font-size:14px;color:var(--text2);line-height:2;padding-left:20px;margin-bottom:24px;">
+    <li>Animated SVG gauge with needle indicator</li>
+    <li>5-zone interpretation (Extreme Fear to Extreme Greed)</li>
+    <li>Market data breakdown: market cap, volume, BTC dominance, active coins</li>
+  </ul>
+
+  <!-- Multi-Chart -->
+  <h2 style="font-size:20px;font-weight:600;margin-bottom:12px;padding-top:16px;border-top:1px solid var(--border);">
+    <span style="color:var(--blue);">10</span> Multi-Chart
+  </h2>
+  <p style="font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:12px;">
+    View multiple charts side by side with independent controls per slot.
+  </p>
+  <ul style="font-size:14px;color:var(--text2);line-height:2;padding-left:20px;margin-bottom:24px;">
+    <li>Layouts: 2x1, 2x2, 3x1</li>
+    <li>Each slot has independent symbol and timeframe selection</li>
+    <li>Add/remove charts dynamically</li>
+  </ul>
+
+  <!-- P&L Calendar -->
+  <h2 style="font-size:20px;font-weight:600;margin-bottom:12px;padding-top:16px;border-top:1px solid var(--border);">
+    <span style="color:var(--green);">11</span> P&L Calendar
+  </h2>
+  <p style="font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:12px;">
+    GitHub-contribution-style heatmap showing daily profit and loss from your trading journal.
+  </p>
+  <ul style="font-size:14px;color:var(--text2);line-height:2;padding-left:20px;margin-bottom:24px;">
+    <li>Green/red color intensity based on P&L magnitude</li>
+    <li>Monthly stats: win days, loss days, best day, worst day</li>
+    <li>Navigate between months with month/year controls</li>
+  </ul>
+
+  <!-- Wallet Auth -->
+  <h2 style="font-size:20px;font-weight:600;margin-bottom:12px;padding-top:16px;border-top:1px solid var(--border);">
+    <span style="color:var(--purple);">12</span> Wallet Authentication
+  </h2>
+  <p style="font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:12px;">
+    Sign in with your crypto wallet — no passwords or emails needed. Supports both EVM and Solana chains.
+  </p>
+  <ul style="font-size:14px;color:var(--text2);line-height:2;padding-left:20px;margin-bottom:12px;">
+    <li><strong style="color:var(--text);">Ethereum (SIWE)</strong> — MetaMask, Coinbase Wallet, Brave Wallet</li>
+    <li><strong style="color:var(--text);">Solana</strong> — Phantom, Solflare, Backpack</li>
+    <li>Ed25519 signature verification for Solana</li>
+    <li>Secure HTTP-only session cookies</li>
+  </ul>
+</Docs>

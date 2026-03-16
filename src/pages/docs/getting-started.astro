@@ -1,0 +1,66 @@
+---
+import Docs from '../../layouts/Docs.astro';
+---
+<Docs title="Getting Started" active="/docs/getting-started">
+  <h1 style="font-size:28px;font-weight:700;margin-bottom:8px;">Getting Started</h1>
+  <p style="font-size:15px;color:var(--text2);line-height:1.7;margin-bottom:32px;">
+    Get up and running with Open Signum Copilot in a few minutes.
+  </p>
+
+  <h2 style="font-size:18px;font-weight:600;margin-bottom:12px;padding-top:16px;border-top:1px solid var(--border);">Prerequisites</h2>
+  <ul style="font-size:14px;color:var(--text2);line-height:2;padding-left:20px;margin-bottom:24px;">
+    <li>A modern web browser (Chrome, Firefox, Brave, Edge)</li>
+    <li>A crypto wallet browser extension (<strong style="color:var(--text);">MetaMask</strong> recommended)</li>
+    <li>Optional: AI engine API key for trade signals (see <a href="/docs/api-setup" style="color:var(--amber);">API Setup</a>)</li>
+  </ul>
+
+  <h2 style="font-size:18px;font-weight:600;margin-bottom:16px;padding-top:16px;border-top:1px solid var(--border);">Step 1: Install a Wallet</h2>
+  <p style="font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:8px;">
+    If you don't have a crypto wallet yet, install MetaMask:
+  </p>
+  <ol style="font-size:14px;color:var(--text2);line-height:2;padding-left:20px;margin-bottom:24px;">
+    <li>Visit the MetaMask website and install the browser extension</li>
+    <li>Create a new wallet or import an existing one</li>
+    <li>Secure your seed phrase — never share it with anyone</li>
+  </ol>
+
+  <h2 style="font-size:18px;font-weight:600;margin-bottom:16px;padding-top:16px;border-top:1px solid var(--border);">Step 2: Connect & Sign In</h2>
+  <ol style="font-size:14px;color:var(--text2);line-height:2;padding-left:20px;margin-bottom:24px;">
+    <li>Click <strong style="color:var(--green);">"Launch App"</strong> on the homepage</li>
+    <li>Click <strong style="color:var(--green);">"Connect Wallet"</strong> on the login page</li>
+    <li>Approve the connection request in your wallet popup</li>
+    <li>Sign the message to verify ownership (this is free — no gas)</li>
+    <li>You'll be redirected to the dashboard</li>
+  </ol>
+
+  <div style="padding:14px;background:rgba(59,158,255,0.08);border:1px solid rgba(59,158,255,0.2);border-radius:8px;margin-bottom:24px;">
+    <p style="font-size:12px;color:var(--blue);line-height:1.7;margin:0;">
+      <strong>Note:</strong> Sign-In with Ethereum (SIWE) only verifies you own the wallet address. We never access your funds or request transaction permissions.
+    </p>
+  </div>
+
+  <h2 style="font-size:18px;font-weight:600;margin-bottom:16px;padding-top:16px;border-top:1px solid var(--border);">Step 3: Explore the Dashboard</h2>
+  <p style="font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:12px;">
+    Once logged in, you'll see the main dashboard with access to all features:
+  </p>
+  <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:24px;">
+    {[
+      { name: 'Dashboard', desc: 'Market overview with live crypto prices' },
+      { name: 'Chart', desc: 'Technical analysis with candlestick charts' },
+      { name: 'Signals', desc: 'AI-generated trade signals (API key needed)' },
+      { name: 'Risk Calc', desc: 'Position sizing and risk management' },
+      { name: 'Portfolio', desc: 'Track your multi-asset positions' },
+      { name: 'Settings', desc: 'Configure API keys and preferences' },
+    ].map(item => (
+      <div style="padding:10px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;">
+        <div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:2px;">{item.name}</div>
+        <div style="font-size:11px;color:var(--text3);">{item.desc}</div>
+      </div>
+    ))}
+  </div>
+
+  <h2 style="font-size:18px;font-weight:600;margin-bottom:12px;padding-top:16px;border-top:1px solid var(--border);">Step 4: Configure API Keys (Optional)</h2>
+  <p style="font-size:14px;color:var(--text2);line-height:1.7;">
+    Charts, prices, and the risk calculator work without any API keys. For AI signals, see the <a href="/docs/api-setup" style="color:var(--green);">API Setup</a> guide.
+  </p>
+</Docs>

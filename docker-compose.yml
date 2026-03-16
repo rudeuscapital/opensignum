@@ -1,0 +1,13 @@
+services:
+  signum:
+    build: .
+    container_name: open-signum-copilot
+    restart: unless-stopped
+    ports:
+      - "4321:4321"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - HOST=0.0.0.0
+      - PORT=4321
