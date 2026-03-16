@@ -272,6 +272,24 @@ else
     log ".env already exists."
 fi
 
+# Sanitize .env — remove unicode chars that break Docker env_file parser
+sed -i 's/[─═]//g' .env 2>/dev/null || true
+
+# Verify .env has required keys
+if ! grep -q "^GROQ_API_KEY=.\+" .env 2>/dev/null; then
+    warn "GROQ_API_KEY is not set in .env — AI features will not work."
+    echo "    Edit: nano $APP_DIR/.env"
+fi
+if ! grep -q "^SESSION_SECRET=.\+" .env 2>/dev/null; then
+    warn "SESSION_SECRET is not set in .env"
+fi
+
+# Show loaded env vars (masked)
+info "Environment:"
+grep -v '^#' .env | grep -v '^$' | while IFS='=' read -r key val; do
+    echo "    $key=${val:0:8}..."
+done
+
 # 7. Build & start with Docker
 log "Building and starting container..."
 docker compose up -d --build --remove-orphans
