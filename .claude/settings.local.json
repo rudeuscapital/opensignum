@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(npm view:*)",
-      "Bash(npx astro:*)",
-      "Bash(node -e \"console.log\\(require\\(''lightweight-charts/package.json''\\).version\\)\")"
-    ]
-  }
-}
