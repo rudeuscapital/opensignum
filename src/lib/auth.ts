@@ -3,7 +3,7 @@ import crypto from 'node:crypto';
 import nacl from 'tweetnacl';
 import bs58 from 'bs58';
 
-const SESSION_SECRET = import.meta.env.SESSION_SECRET || 'signum-copilot-dev-secret-change-in-prod';
+const SESSION_SECRET = process.env.SESSION_SECRET || import.meta.env.SESSION_SECRET || 'signum-copilot-dev-secret-change-in-prod';
 const SESSION_MAX_AGE = 7 * 24 * 60 * 60; // 7 days in seconds
 
 // In-memory nonce store (replace with Redis/DB in production)

@@ -7,7 +7,7 @@ export const POST: APIRoute = async ({ request }) => {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
   }
 
-  const groqKey = import.meta.env.GROQ_API_KEY;
+  const groqKey = process.env.GROQ_API_KEY || import.meta.env.GROQ_API_KEY;
   if (!groqKey) {
     return new Response(JSON.stringify({ error: 'AI engine not configured — contact administrator' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }

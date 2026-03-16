@@ -11,7 +11,7 @@ export const GET: APIRoute = async ({ request }) => {
   }
 
   return new Response(JSON.stringify({
-    groq: !!import.meta.env.GROQ_API_KEY,
+    groq: !!(process.env.GROQ_API_KEY || import.meta.env.GROQ_API_KEY),
   }), {
     headers: { 'Content-Type': 'application/json' },
   });
