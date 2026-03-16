@@ -551,24 +551,62 @@ const btcUp = btcChange >= 0;
 
   <!-- More features (outside feat-grid) -->
   <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:18px;">
-    {[
-      { icon:'🔍', title:'Market Screener', desc:'Scan all assets by RSI, MACD, Bollinger, EMA. Preset filters and auto-generated buy/sell signals.' },
-      { icon:'🐋', title:'Whale Tracker', desc:'Monitor large wallet movements. Detect exchange inflows/outflows and accumulation patterns.' },
-      { icon:'👥', title:'Copy Trading', desc:'Follow top signal providers, copy trades with one click. Verified performance tracking.' },
-      { icon:'🏆', title:'Leaderboard', desc:'Compete with other traders. Rankings by P&L, win rate, and trade count with badges and streaks.' },
-      { icon:'📊', title:'Multi-Chart', desc:'View 2-4 charts side by side with independent symbol and timeframe controls per slot.' },
-      { icon:'😱', title:'Fear & Greed Index', desc:'Market sentiment gauge computed from real-time data with visual indicator and breakdown.' },
-      { icon:'📅', title:'P&L Calendar', desc:'GitHub-style heatmap of your daily profits and losses. Track your trading consistency.' },
-      { icon:'🤖', title:'AI Chat Assistant', desc:'Ask questions about markets, strategies, and technical analysis. AI-powered trading copilot.' },
-    ].map((f,i) => (
-      <div class={`feat-card reveal reveal-d${(i%3)+1}`} style="display:flex;align-items:flex-start;gap:16px;padding:20px;">
-        <div style="font-size:28px;flex-shrink:0;">{f.icon}</div>
-        <div style="min-width:0;">
-          <h3 style="font-size:15px;font-weight:600;margin-bottom:4px;">{f.title}</h3>
-          <p style="font-size:13px;color:var(--text2);line-height:1.6;">{f.desc}</p>
-        </div>
+    <!-- Market Screener -->
+    <div class="feat-card reveal reveal-d1" style="display:flex;align-items:flex-start;gap:16px;padding:20px;">
+      <div class="feat-icon" style="background:rgba(59,158,255,.08);flex-shrink:0;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/><path d="M11 8v6"/><path d="M8 11h6"/></svg>
       </div>
-    ))}
+      <div style="min-width:0;"><h3 style="font-size:15px;font-weight:600;margin-bottom:4px;">Market Screener</h3><p style="font-size:13px;color:var(--text2);line-height:1.6;">Scan all assets by RSI, MACD, Bollinger, EMA. Preset filters and auto-generated buy/sell signals.</p></div>
+    </div>
+    <!-- Whale Tracker -->
+    <div class="feat-card reveal reveal-d2" style="display:flex;align-items:flex-start;gap:16px;padding:20px;">
+      <div class="feat-icon" style="background:rgba(167,139,250,.08);flex-shrink:0;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--purple)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12c0-4 3.5-8 9-8 3 0 5.5 1.5 7 3l3-1-2 3c.5 1 1 2.2 1 3.5C20 17 16.5 20 12 20S2 16 2 12z"/><circle cx="10" cy="11" r="1" fill="var(--purple)"/></svg>
+      </div>
+      <div style="min-width:0;"><h3 style="font-size:15px;font-weight:600;margin-bottom:4px;">Whale Tracker</h3><p style="font-size:13px;color:var(--text2);line-height:1.6;">Monitor large wallet movements. Detect exchange inflows/outflows and accumulation patterns.</p></div>
+    </div>
+    <!-- Copy Trading -->
+    <div class="feat-card reveal reveal-d3" style="display:flex;align-items:flex-start;gap:16px;padding:20px;">
+      <div class="feat-icon" style="background:rgba(0,212,170,.08);flex-shrink:0;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      </div>
+      <div style="min-width:0;"><h3 style="font-size:15px;font-weight:600;margin-bottom:4px;">Copy Trading</h3><p style="font-size:13px;color:var(--text2);line-height:1.6;">Follow top signal providers, copy trades with one click. Verified performance tracking.</p></div>
+    </div>
+    <!-- Leaderboard -->
+    <div class="feat-card reveal reveal-d1" style="display:flex;align-items:flex-start;gap:16px;padding:20px;">
+      <div class="feat-icon" style="background:rgba(245,166,35,.08);flex-shrink:0;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+      </div>
+      <div style="min-width:0;"><h3 style="font-size:15px;font-weight:600;margin-bottom:4px;">Leaderboard</h3><p style="font-size:13px;color:var(--text2);line-height:1.6;">Compete with other traders. Rankings by P&L, win rate, and trade count with badges and streaks.</p></div>
+    </div>
+    <!-- Multi-Chart -->
+    <div class="feat-card reveal reveal-d2" style="display:flex;align-items:flex-start;gap:16px;padding:20px;">
+      <div class="feat-icon" style="background:rgba(59,158,255,.08);flex-shrink:0;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="9" height="9" rx="1"/><rect x="13" y="2" width="9" height="9" rx="1"/><rect x="2" y="13" width="9" height="9" rx="1"/><rect x="13" y="13" width="9" height="9" rx="1"/></svg>
+      </div>
+      <div style="min-width:0;"><h3 style="font-size:15px;font-weight:600;margin-bottom:4px;">Multi-Chart</h3><p style="font-size:13px;color:var(--text2);line-height:1.6;">View 2-4 charts side by side with independent symbol and timeframe controls per slot.</p></div>
+    </div>
+    <!-- Fear & Greed -->
+    <div class="feat-card reveal reveal-d3" style="display:flex;align-items:flex-start;gap:16px;padding:20px;">
+      <div class="feat-icon" style="background:rgba(245,166,35,.08);flex-shrink:0;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/></svg>
+      </div>
+      <div style="min-width:0;"><h3 style="font-size:15px;font-weight:600;margin-bottom:4px;">Fear & Greed Index</h3><p style="font-size:13px;color:var(--text2);line-height:1.6;">Market sentiment gauge computed from real-time data with visual indicator and breakdown.</p></div>
+    </div>
+    <!-- P&L Calendar -->
+    <div class="feat-card reveal reveal-d1" style="display:flex;align-items:flex-start;gap:16px;padding:20px;">
+      <div class="feat-icon" style="background:rgba(0,212,170,.08);flex-shrink:0;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/></svg>
+      </div>
+      <div style="min-width:0;"><h3 style="font-size:15px;font-weight:600;margin-bottom:4px;">P&L Calendar</h3><p style="font-size:13px;color:var(--text2);line-height:1.6;">GitHub-style heatmap of your daily profits and losses. Track your trading consistency.</p></div>
+    </div>
+    <!-- AI Chat -->
+    <div class="feat-card reveal reveal-d2" style="display:flex;align-items:flex-start;gap:16px;padding:20px;">
+      <div class="feat-icon" style="background:rgba(167,139,250,.08);flex-shrink:0;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--purple)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 10h.01"/><path d="M12 10h.01"/><path d="M16 10h.01"/></svg>
+      </div>
+      <div style="min-width:0;"><h3 style="font-size:15px;font-weight:600;margin-bottom:4px;">AI Chat Assistant</h3><p style="font-size:13px;color:var(--text2);line-height:1.6;">Ask questions about markets, strategies, and technical analysis. AI-powered trading copilot.</p></div>
+    </div>
   </div>
 </section>
 

@@ -63,6 +63,7 @@ update)
     log "Pulling latest changes..."
     cd "$APP_DIR"
     git pull --ff-only || { warn "git pull failed — trying reset"; git fetch origin; git reset --hard origin/main; }
+    docker rm -f "$APP_NAME" 2>/dev/null || true
     docker compose up -d --build --remove-orphans
     health_check
     log "Updated and restarted."
@@ -292,6 +293,7 @@ done
 
 # 7. Build & start with Docker
 log "Building and starting container..."
+docker rm -f "$APP_NAME" 2>/dev/null || true
 docker compose up -d --build --remove-orphans
 
 health_check
