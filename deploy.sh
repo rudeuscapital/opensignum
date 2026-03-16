@@ -174,9 +174,34 @@ if [ "$(id -u)" -ne 0 ]; then
     err "This script must be run as root (use sudo)"
 fi
 
-# 2. System packages
+# 2. Fix broken apt mirrors (common on cloud VPS)
+fix_apt_mirrors() {
+    local fixed=false
+    for f in /etc/apt/sources.list /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; do
+        [ -f "$f" ] || continue
+        if grep -q "mirror.repository.id\|broken-mirror\|mirror\..*\.id" "$f" 2>/dev/null; then
+            sed -i 's|http://mirror\.[a-zA-Z0-9._-]*/ubuntu|http://archive.ubuntu.com/ubuntu|g' "$f"
+            fixed=true
+        fi
+    done
+    if [ "$fixed" = true ]; then
+        warn "Fixed broken apt mirror — switched to archive.ubuntu.com"
+    fi
+}
+
+log "Checking apt sources..."
+fix_apt_mirrors
+
 log "Installing system packages..."
-apt-get update -qq
+apt-get update -qq 2>/dev/null || {
+    warn "apt-get update failed — attempting mirror fix..."
+    # Force replace all mirrors with official Ubuntu mirror
+    for f in /etc/apt/sources.list /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; do
+        [ -f "$f" ] || continue
+        sed -i -E 's|https?://[a-zA-Z0-9._-]+/(ubuntu)|http://archive.ubuntu.com/\1|g' "$f"
+    done
+    apt-get update -qq || err "apt-get update failed after mirror fix. Check /etc/apt/sources.list manually."
+}
 apt-get install -y -qq curl git nginx certbot python3-certbot-nginx ufw > /dev/null 2>&1
 
 # 3. Docker (if not installed)
