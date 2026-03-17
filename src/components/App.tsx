@@ -117,6 +117,7 @@ function MarketStatus() {
 export default function App({ walletAddress = '', walletChain = 'evm' }: AppProps) {
   const [tab, setTab] = useState('dashboard');
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileNav, setMobileNav] = useState(false);
   const [online, setOnline] = useState(true);
   const [cmdOpen, setCmdOpen] = useState(false);
   const [cmdQuery, setCmdQuery] = useState('');
@@ -202,8 +203,13 @@ export default function App({ walletAddress = '', walletChain = 'evm' }: AppProp
 
   return (
     <div style={{ display:'flex', height:'100vh', overflow:'hidden', background:'var(--bg)' }}>
+      {/* ═══ MOBILE OVERLAY ═══ */}
+      {mobileNav && (
+        <div className="sidebar-overlay" onClick={() => setMobileNav(false)} />
+      )}
+
       {/* ═══ SIDEBAR ═══ */}
-      <aside style={{
+      <aside className={`app-sidebar${mobileNav ? ' mobile-open' : ''}`} style={{
         width: collapsed ? 56 : 200,
         background:'var(--bg2)', borderRight:'1px solid var(--border)',
         display:'flex', flexDirection:'column', flexShrink:0,
@@ -245,7 +251,7 @@ export default function App({ walletAddress = '', walletChain = 'evm' }: AppProp
                 return (
                   <button
                     key={id}
-                    onClick={() => setTab(id)}
+                    onClick={() => { setTab(id); setMobileNav(false); }}
                     title={collapsed ? `${label}${shortcut ? ` (Alt+${shortcut})` : ''}` : undefined}
                     style={{
                       display:'flex', alignItems:'center', gap:10,
@@ -311,13 +317,25 @@ export default function App({ walletAddress = '', walletChain = 'evm' }: AppProp
       {/* ═══ MAIN AREA ═══ */}
       <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden' }}>
         {/* ─── TOP BAR ─── */}
-        <header style={{
+        <header className="app-topbar" style={{
           display:'flex', alignItems:'center', justifyContent:'space-between',
           padding:'0 20px', height:52, borderBottom:'1px solid var(--border)',
           background:'var(--bg2)', flexShrink:0,
         }}>
-          {/* Left: breadcrumb + search */}
+          {/* Left: hamburger + breadcrumb + search */}
           <div style={{ display:'flex', alignItems:'center', gap:14 }}>
+            {/* Mobile hamburger */}
+            <button
+              onClick={() => setMobileNav(!mobileNav)}
+              style={{
+                display:'none', alignItems:'center', justifyContent:'center',
+                width:32, height:32, borderRadius:6, border:'1px solid var(--border)',
+                background:'transparent', cursor:'pointer', color:'var(--text)',
+              }}
+              className="mobile-menu-btn"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            </button>
             {/* Breadcrumb */}
             <div style={{ display:'flex', alignItems:'center', gap:6 }}>
               {currentNav && (
@@ -330,6 +348,7 @@ export default function App({ walletAddress = '', walletChain = 'evm' }: AppProp
             {/* Search / Command palette trigger */}
             <button
               onClick={() => setCmdOpen(true)}
+              className="search-trigger"
               style={{
                 display:'flex', alignItems:'center', gap:8,
                 padding:'5px 12px 5px 10px', borderRadius:6,
@@ -349,11 +368,11 @@ export default function App({ walletAddress = '', walletChain = 'evm' }: AppProp
           </div>
 
           {/* Center: market status */}
-          <MarketStatus />
+          <div className="desktop-only"><MarketStatus /></div>
 
           {/* Right: clock, notif, wallet */}
           <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-            <LiveClock />
+            <span className="desktop-only"><LiveClock /></span>
             {/* Notifications */}
             <div style={{ position:'relative' }}>
               <button
@@ -433,7 +452,7 @@ export default function App({ walletAddress = '', walletChain = 'evm' }: AppProp
         <TickerBar />
 
         {/* ─── CONTENT ─── */}
-        <main style={{ flex:1, overflow:'auto', padding:'20px 24px' }}>
+        <main className="app-main" style={{ flex:1, overflow:'auto', padding:'20px 24px' }}>
           <div style={{ maxWidth:1200, margin:'0 auto', width:'100%' }}>
             <div key={tab} className="fade-in">
               {panels[tab] ?? panels.dashboard}
@@ -442,7 +461,7 @@ export default function App({ walletAddress = '', walletChain = 'evm' }: AppProp
         </main>
 
         {/* ─── STATUS BAR ─── */}
-        <footer style={{
+        <footer className="app-statusbar" style={{
           display:'flex', alignItems:'center', justifyContent:'space-between',
           padding:'0 16px', height:26, borderTop:'1px solid var(--border)',
           background:'var(--bg2)', fontSize:10, color:'var(--text3)',
@@ -456,13 +475,13 @@ export default function App({ walletAddress = '', walletChain = 'evm' }: AppProp
                 : <><WifiOff size={10} color="var(--red)"/><span style={{color:'var(--red)'}}>Offline</span></>
               }
             </div>
-            <span style={{ color:'var(--border2)' }}>|</span>
-            <span>Open Signum Copilot</span>
-            <span style={{ color:'var(--border2)' }}>|</span>
-            <Globe size={10}/>
-            <span>Crypto · Forex · Stocks</span>
+            <span className="desktop-only" style={{ color:'var(--border2)' }}>|</span>
+            <span className="desktop-only">Open Signum Copilot</span>
+            <span className="desktop-only" style={{ color:'var(--border2)' }}>|</span>
+            <span className="desktop-only"><Globe size={10}/></span>
+            <span className="desktop-only">Crypto · Forex · Stocks</span>
           </div>
-          <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+          <div className="desktop-only" style={{ display:'flex', alignItems:'center', gap:12 }}>
             <span>AI Engine Active</span>
             <span style={{ color:'var(--border2)' }}>|</span>
             <span>Open Signum Copilot v1.0</span>

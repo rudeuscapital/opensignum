@@ -17,7 +17,7 @@ const nav = [
 ---
 <Base title={`${title} — Open Signum Copilot Docs`}>
   <!-- Top bar -->
-  <nav style="display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:52px;border-bottom:1px solid var(--border);background:var(--bg2);">
+  <nav class="docs-topbar" style="display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:52px;border-bottom:1px solid var(--border);background:var(--bg2);">
     <div style="display:flex;align-items:center;gap:10px;">
       <a href="/" style="display:flex;align-items:center;gap:8px;text-decoration:none;color:var(--text);">
         <img src="/logo.png" alt="Open Signum" style="width:28px;height:28px;border-radius:6px;object-fit:contain;" />
@@ -33,9 +33,9 @@ const nav = [
     </div>
   </nav>
 
-  <div style="display:flex;max-width:1100px;margin:0 auto;min-height:calc(100vh - 52px);">
+  <div class="docs-container" style="display:flex;max-width:1100px;margin:0 auto;min-height:calc(100vh - 52px);">
     <!-- Sidebar -->
-    <aside style="width:220px;padding:24px 20px;border-right:1px solid var(--border);flex-shrink:0;">
+    <aside class="docs-sidebar" style="width:220px;padding:24px 20px;border-right:1px solid var(--border);flex-shrink:0;">
       <div style="font-size:11px;font-family:var(--font-mono);color:var(--text3);letter-spacing:0.08em;margin-bottom:12px;">DOCUMENTATION</div>
       {nav.map(item => (
         <a
@@ -48,7 +48,7 @@ const nav = [
     </aside>
 
     <!-- Content -->
-    <main style="flex:1;padding:32px 40px;max-width:760px;">
+    <main class="docs-content" style="flex:1;padding:32px 40px;max-width:760px;">
       <slot />
     </main>
   </div>

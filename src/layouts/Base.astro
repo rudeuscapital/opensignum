@@ -76,6 +76,124 @@ const { title = 'Open Signum Copilot' } = Astro.props;
     }
 
     .fade-in { animation: fadeIn 0.35s ease forwards; }
+
+    /* ── Mobile elements hidden on desktop ────────────────────────────── */
+    .mobile-menu { display: none; }
+    .mobile-menu-btn { display: none !important; }
+
+    /* ── Responsive ────────────────────────────────────────────────────── */
+    @media (max-width: 768px) {
+      /* App sidebar hidden by default on mobile */
+      .app-sidebar { display: none !important; }
+      .app-sidebar.mobile-open {
+        display: flex !important;
+        position: fixed !important;
+        inset: 0 !important;
+        width: 260px !important;
+        z-index: 9000 !important;
+        box-shadow: 8px 0 30px rgba(0,0,0,.6) !important;
+      }
+      .sidebar-overlay {
+        display: block !important;
+        position: fixed; inset: 0; z-index: 8999;
+        background: rgba(0,0,0,.5); backdrop-filter: blur(2px);
+      }
+      .sidebar-overlay.hidden { display: none !important; }
+
+      /* App top bar adjustments */
+      .app-topbar { padding: 0 12px !important; }
+      .app-topbar .desktop-only { display: none !important; }
+      .app-topbar .search-trigger { min-width: 120px !important; }
+
+      /* App main content */
+      .app-main { padding: 12px !important; }
+      .app-statusbar .desktop-only { display: none !important; }
+
+      /* Landing navbar */
+      .landing-nav { padding: 0 16px !important; }
+      .landing-nav-links { display: none !important; }
+      .mobile-menu-btn { display: flex !important; }
+      .mobile-menu {
+        display: flex !important; position: fixed; top: 60px; left: 0; right: 0;
+        background: rgba(8,12,16,.97); backdrop-filter: blur(16px);
+        flex-direction: column; padding: 16px; gap: 4px;
+        border-bottom: 1px solid var(--border); z-index: 999;
+        animation: fadeIn .2s ease;
+      }
+      .mobile-menu.hidden { display: none !important; }
+      .mobile-menu a {
+        padding: 12px 16px; border-radius: 8px; font-size: 14px;
+        color: var(--text2); text-decoration: none;
+      }
+      .mobile-menu a:hover { background: var(--bg3); color: var(--text); }
+
+      /* Landing hero */
+      .hero-section { padding: 100px 16px 40px !important; min-height: auto !important; }
+      .hero-h1 { font-size: 28px !important; }
+      .hero-subtitle { font-size: 15px !important; }
+      .hero-chart-container { max-width: 100% !important; margin-top: 32px !important; }
+      .hero-chart-indicators { display: none !important; }
+      .hero-chart-tags { display: none !important; }
+
+      /* Landing grids */
+      .feat-grid { grid-template-columns: 1fr !important; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
+      .steps-grid { grid-template-columns: 1fr !important; }
+      .proof-grid { grid-template-columns: 1fr !important; }
+      .more-feat-grid { grid-template-columns: 1fr !important; }
+      .token-utility-grid { grid-template-columns: 1fr !important; }
+      .token-phase-grid { grid-template-columns: repeat(2, 1fr) !important; }
+      .step-connector { display: none !important; }
+
+      /* Roadmap timeline */
+      .roadmap-item {
+        flex-direction: column !important;
+      }
+      .roadmap-item > div:first-child {
+        width: 100% !important; text-align: left !important; padding: 0 !important;
+      }
+      .roadmap-center-dot { display: none !important; }
+      .roadmap-spacer { display: none !important; }
+      .roadmap-line { left: 16px !important; }
+
+      /* Feature list grid */
+      .feature-list-grid { grid-template-columns: 1fr !important; }
+
+      /* Docs layout */
+      .docs-container { flex-direction: column !important; }
+      .docs-sidebar {
+        width: 100% !important; border-right: none !important;
+        border-bottom: 1px solid var(--border) !important;
+        padding: 12px 16px !important;
+        display: flex !important; gap: 4px !important; overflow-x: auto !important;
+      }
+      .docs-sidebar > div:first-child { display: none !important; }
+      .docs-sidebar a { white-space: nowrap !important; padding: 6px 12px !important; }
+      .docs-content { padding: 20px 16px !important; }
+      .docs-topbar { padding: 0 16px !important; }
+
+      /* Footer */
+      .landing-footer-inner {
+        flex-direction: column !important;
+        text-align: center !important; gap: 12px !important;
+      }
+
+      /* Login page */
+      .login-container { padding: 20px 16px !important; }
+
+      /* General */
+      .section-connector { height: 40px !important; }
+      .cta-btn { padding: 14px 28px !important; font-size: 14px !important; }
+      .stat-num { font-size: 24px !important; }
+    }
+
+    @media (max-width: 480px) {
+      .hero-h1 { font-size: 24px !important; }
+      .stats-grid { grid-template-columns: 1fr 1fr !important; gap: 12px !important; }
+      .token-phase-grid { grid-template-columns: 1fr !important; }
+      .cta-buttons { flex-direction: column !important; }
+      .cta-buttons a { width: 100% !important; justify-content: center !important; }
+    }
   </style>
 </head>
 <body>
