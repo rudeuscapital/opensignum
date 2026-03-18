@@ -795,7 +795,15 @@ const btcUp = btcChange >= 0;
       <div style="display:flex;justify-content:center;margin-bottom:28px;">
         <div style="display:inline-flex;align-items:center;gap:8px;padding:10px 24px;border-radius:24px;background:rgba(167,139,250,.08);border:1px solid rgba(167,139,250,.2);">
           <div style="width:8px;height:8px;border-radius:50%;background:var(--purple);animation:pulse 2s ease-in-out infinite;"></div>
-          <span style="font-family:var(--font-mono);font-size:13px;font-weight:600;color:var(--purple);letter-spacing:.06em;">COMING SOON</span>
+          <span style="font-family:var(--font-mono);font-size:13px;font-weight:600;color:var(--purple);letter-spacing:.06em;">GENERATED</span>
+        </div>
+      </div>
+
+      <!-- Contract address -->
+      <div style="display:flex;justify-content:center;margin-bottom:24px;">
+        <div style="display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:10px;background:var(--bg3);border:1px solid var(--border);">
+          <span style="font-size:11px;color:var(--text3);">Contract</span>
+          <span style="font-family:var(--font-mono);font-size:12px;color:var(--text);">4XfuNYUSdF1fvSqQHo5FhBbpBTaZkVzPvoVjixVbpump</span>
         </div>
       </div>
 
@@ -818,8 +826,8 @@ const btcUp = btcChange >= 0;
     <!-- Roadmap mini -->
     <div class="reveal reveal-d2 token-phase-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
       {[
-        { phase: 'Phase 1', title: 'Platform Launch', status: 'active' },
-        { phase: 'Phase 2', title: 'Token Generation', status: 'upcoming' },
+        { phase: 'Phase 1', title: 'Platform Launch', status: 'done' },
+        { phase: 'Phase 2', title: 'Token Generation', status: 'active' },
         { phase: 'Phase 3', title: 'Governance Live', status: 'upcoming' },
         { phase: 'Phase 4', title: 'Staking & Rewards', status: 'upcoming' },
       ].map((p, i) => (
